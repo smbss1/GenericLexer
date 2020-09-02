@@ -1,7 +1,7 @@
 
+#include <iostream>
 #include "Lexer.h"
 #include "Parser.h"
-#include <iostream>
 
 using namespace std;
 
@@ -45,15 +45,38 @@ std::string Token::GetText()
     return m_strText;
 }
 
-void Token::SetText(std::string strText)
+void Token::SetText(std::string& strText)
 {
-    m_strText = string(strText);
+    m_strText.assign(strText);
     // m_strvText = string_view(m_strText);
 }
 
 TokenType Token::GetType()
 {
     return m_eType;
+}
+
+string Token::TypeToString()
+{
+    switch (m_eType)
+    {
+    case TokenType::TokenUnknown :
+        return "Unknown";
+    case TokenType::TokenAlphaNum :
+        return "Identifier";
+    case TokenType::TokenNumber :
+        return "Number";
+    case TokenType::TokenString :
+        return "String";
+    case TokenType::TokenChar :
+        return "Char";
+    case TokenType::TokenSymbol :
+        return "Symbol";
+    case TokenType::TokenEof :
+        return "Eof";
+    default:
+        break;
+    }
 }
 
 void Token::SetType(TokenType type)

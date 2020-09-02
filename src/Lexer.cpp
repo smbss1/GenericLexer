@@ -8,10 +8,10 @@ using namespace std;
 Lexer::Lexer() { }
 Lexer::~Lexer() { }
 
-Lexer::Lexer(char* strText)
-{
-	m_strBegin = strText;
-}
+// Lexer::Lexer(char* strText)
+// {
+// 	m_strBegin = strText;
+// }
 
 // ---------------------------------------------------------------
 
@@ -53,23 +53,25 @@ Token Lexer::ParseNumber()
 Token Lexer::ParseSymbol()
 {
     const char *start = m_strCurrent;
-    static char *symbols[] = {
-        "(", ")", "[", "]",
-        "{", "}", ";",
-        "::", "->", ":",
-        "*", "+", "-",
-        "/", "<<", ">>", ",","!"
-    };
+    // static char *symbols[] = {
+    //     "(", ")", "[", "]",
+    //     "{", "}", ";",
+    //     "::", "->", ":",
+    //     "*", "+", "-",
+    //     "/", "<<", ">>", ",","!"
+    // };
+    
     for (; *m_strCurrent; m_strCurrent++)
-        if (!IsSymbol(*m_strCurrent))
+        if (isalnum(*m_strCurrent))
             break;
-    for (int k = 0; k < (sizeof(symbols) / sizeof(symbols[0])); ++k) {
-        int len = strlen(symbols[k]);
-        if (!strncmp(symbols[k], start, len)) {
+    for (int k = 0; k < m_oSymbols.size(); ++k) {
+        int len = m_oSymbols[k].size();
+        if (m_oSymbols[k].compare(0, len, start, len) == 0) {
             m_strCurrent = (char *) start + len;
             return (Token(TokenType::TokenSymbol, start, len));
         }
     }
+    return (Token(TokenType::TokenUnknown, start, distance(start, m_strCurrent)));
 }
 
 /**
@@ -126,33 +128,36 @@ int Lexer::IsSymbol(int c)
  * @brief Cette fonction renvoie un token avec son type approprié
  * @return un token avec le type correspondant au mot parsé
  */
-Token Lexer::GetToken()
+void Lexer::ScanToken()
 {
-    m_strCurrent = (char *) m_strBegin;
-    int line = SkipWhitespace(&m_strCurrent);
-    Token token;
+    // m_strCurrent = (char *) m_strBegin;
+    int line = SkipWhitespace();
+    // Token token;
 
-    if (*m_strCurrent == '\0') {
-		return (Token(TokenType::TokenEof, m_strCurrent, 1));
+    if (IsEnd(m_strCurrent)) {
+        return;
 	}
-    if (*m_strCurrent == '@') {
-        return ParseTag();
+    if (!isalnum(*m_strCurrent)) {
+        oTokenList.push_back(ParseSymbol());
     }
-    if (IsSymbol(*m_strCurrent))
-        return ParseSymbol();
-    if (*m_strCurrent == '"') {
-        return ParseString();
+    else if (*m_strCurrent == '"') {
+        oTokenList.push_back(ParseString());
     } else {
         if (isalpha(*m_strCurrent)) {
-        	return ParseAlpha();
+        	oTokenList.push_back(ParseAlpha());
 		} else if (isdigit(*m_strCurrent)) {
-			return ParseNumber();
+			oTokenList.push_back(ParseNumber());
 		} else {
-            return (Token(TokenType::TokenUnknown));
+            oTokenList.push_back(Token(TokenType::TokenUnknown));
 		}
 	}
-    token.m_iLinesTraversed = line;
-    return (token);
+    // token.m_iLinesTraversed = line;
+    // oTokenList.push_back(token);
+}
+
+Token Lexer::GetToken()
+{
+
 }
 
 /**
@@ -170,10 +175,12 @@ Token Lexer::PeekToken()
  */
 Token Lexer::NextToken()
 {
-	Token token = GetToken();
-    m_strBegin = m_strCurrent;
-    //this->m_iLines += token.iLinesTraversed;
-    return token;
+    if (oTokenList.end() != oTokenIterator)
+    {
+        return *oTokenIterator++;
+    }
+    else
+        return oEofToken;
 }
 
 /**
@@ -187,7 +194,7 @@ bool Lexer::TokenMatch(Token oToken, char* string)
     return (!strncmp(oToken.GetCString(), string, oToken.m_iLength) && string[oToken.m_iLength] == 0);
 }
 
-bool Lexer::TokenMatch(Token oToken, string strString)
+bool Lexer::TokenMatch(Token oToken, const string& strString)
 {
     return (oToken.GetText() == strString);
 }
@@ -204,12 +211,13 @@ bool Lexer::RequireToken(char* strText, Token* pToken)
     bool result = false;
 
     if (TokenMatch(oToken, strText)) {
-        m_strBegin = m_strCurrent;
+        // m_strBegin = m_strCurrent;
         //Lexer->lines += token.lines_traversed;
         result = true;
         if (pToken) {
             pToken->m_iLength = oToken.m_iLength;
-            pToken->SetText(string(oToken.GetText()));
+            string strTemp = oToken.GetText();
+            pToken->SetText(strTemp);
             pToken->SetType(oToken.GetType());
         }
     }
@@ -227,11 +235,12 @@ bool Lexer::RequireTokenType(TokenType eType, Token* pToken)
     Token oToken = GetToken();
 
     if (oToken.IsType(eType)) {
-        m_strBegin = m_strCurrent;
+        // m_strBegin = m_strCurrent;
         //Lexer->lines += token.lines_traversed;
         if (pToken) {
             pToken->m_iLength = oToken.m_iLength;
-            pToken->SetText(string(oToken.GetText()));
+            string strTemp = oToken.GetText();
+            pToken->SetText(strTemp);
             pToken->SetType(oToken.GetType());
         }
         return (true);
@@ -244,21 +253,20 @@ bool Lexer::IsWhitespace(char c)
     return (c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '/');
 }
 
-int Lexer::SkipComment(char** c, bool long_comment)
+int Lexer::SkipComment(bool long_comment)
 {
     int line = 0;
-    (*c)++;
-    (*c)++;
+    m_strCurrent += 2;
     if (long_comment) {
-        while (**c != '*' && *(*c + 1) != '/' && **c) {
-            if (**c == '\n' || **c == '\0')
+        while (*m_strCurrent != '*' && *(m_strCurrent + 1) != '/' && *m_strCurrent) {
+            if (*m_strCurrent == '\n' || *m_strCurrent == '\0')
                 ++line;
-            (*c)++;
+            m_strCurrent++;
         }
-        (*c)++;
+        m_strCurrent++;
     } else {
-        while (**c != '\n' && **c) {
-            (*c)++;
+        while (*m_strCurrent != '\n' && *m_strCurrent) {
+            m_strCurrent++;
         }
         ++line;
     }
@@ -266,23 +274,23 @@ int Lexer::SkipComment(char** c, bool long_comment)
     return (line);
 }
 
-int Lexer::SkipWhitespace(char** c)
+int Lexer::SkipWhitespace()
 {
     int line = 0;
 
-    while (IsWhitespace(**c) && **c) {
-        if (**c == '\n' || **c == '\0')
+    while (IsWhitespace(*m_strCurrent) && *m_strCurrent) {
+        if (*m_strCurrent == '\n' || *m_strCurrent == '\0')
             ++line;
-        if (**c == '/' && *(*c + 1) == '/') {
-            line += SkipComment(c, false);
-            continue;
-        }
+        // if (*m_strCurrent == '/' && *(m_strCurrent + 1) == '/') {
+        //     line += SkipComment(false);
+        //     continue;
+        // }
 
-        if (**c == '/' && *(*c + 1) == '*') {
-            line += SkipComment(c, true);
-            continue;
-        }
-        (*c)++;
+        // if (*m_strCurrent == '/' && *(m_strCurrent + 1) == '*') {
+        //     line += SkipComment(true);
+        //     continue;
+        // }
+        m_strCurrent++;
     }
     return (line);
 }
@@ -298,7 +306,7 @@ bool Lexer::IsToken(const TokenType eType, bool bAdvance)
     return (false);
 }
 
-bool Lexer::IsToken(const TokenType eType, const string strValue, bool bAdvance)
+bool Lexer::IsToken(const TokenType eType, const string& strValue, bool bAdvance)
 {
     Token oToken = GetToken();
     if (oToken.IsType(eType) && TokenMatch(oToken, strValue) && bAdvance)
@@ -334,43 +342,100 @@ bool Lexer::IsTokenThenAssign(const TokenType eType, Container<string,Allocator>
     return false;
 }
 
-bool Lexer::Process(const string strText)
+bool Lexer::Process(const string& strText)
 {
-    base_itr_ = strText.data();
-    s_itr_    = strText.data();
-    s_end_    = strText.data() + strText.size();
-	m_strBegin = strText.c_str();
+    strBaseIterator = strText.data();
+    m_strCurrent    = strText.data();
+    strEnd    = strText.data() + strText.size();
+	// m_strBegin = strText.c_str();
 
-    // eof_token_.set_operator(token_t::e_eof,s_end_,s_end_,base_itr_);
-    token_list_.clear();
+    oEofToken.m_strText.assign(strEnd, strEnd);
+    // if (strBaseIterator)
+    //     position = std::distance(strBaseIterator, strEnd);
+    oTokenList.clear();
 
-    while (!PeekToken().IsType(TokenType::TokenEof))
+    while (!IsEnd(m_strCurrent))
     {
-        // scan_token();
+        ScanToken();
 
-        // if (token_list_.empty())
-        //     return true;
-        // else if (token_list_.back().is_error())
-        // {
-        //     return false;
-        // }
-        token_list_.push_back(NextToken());
+        if (oTokenList.empty())
+            return true;
+        else if (oTokenList.back().IsError())
+            return false;
     }
     return true;
 }
 
 void Lexer::Begin()
 {
-    token_itr_ = token_list_.begin();
-    store_token_itr_ = token_list_.begin();
+    oTokenIterator = oTokenList.begin();
+    oStoreTokenIterator = oTokenList.begin();
 }
 
 bool Lexer::IsEnd(const char* strItr)
 {
-    return (s_end_ == strItr);
+    return (strItr == strEnd);
+}
+
+void Lexer::Store()
+{
+    oStoreTokenIterator = oTokenIterator;
+}
+
+void Lexer::Restore()
+{
+    oTokenIterator = oStoreTokenIterator;
+}
+
+Token& Lexer::PeekNextToken()
+{
+    if (oTokenList.end() != oTokenIterator)
+    {
+        return *oTokenIterator;
+    }
+    else
+        return oEofToken;
+}
+
+bool Lexer::Empty() const
+{
+    return oTokenList.empty();
+}
+
+std::size_t Lexer::Size() const
+{
+    return oTokenList.size();
+}
+
+void Lexer::Clear()
+{
+    strBaseIterator = 0;
+    m_strCurrent = 0;
+    strEnd = 0;
+    oTokenList.clear();
+    oTokenIterator = oTokenList.end();
+    oStoreTokenIterator = oTokenList.end();
+}
+
+bool Lexer::Finished() const
+{
+    return (oTokenList.end() == oTokenIterator);
 }
 
 void Lexer::AddSymbol(string& oSymbol)
 {
     m_oSymbols.push_back(oSymbol);
+}
+
+void Lexer::AddSymbol(const char* oSymbol)
+{
+    m_oSymbols.push_back(oSymbol);
+}
+
+void Lexer::AddSymbols(vector<string> oSymbols)
+{
+    for (auto symbol : oSymbols)
+    {
+        m_oSymbols.push_back(symbol);
+    }
 }

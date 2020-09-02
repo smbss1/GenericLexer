@@ -369,3 +369,8 @@ bool Lexer::IsEnd(const char* strItr)
 {
     return (s_end_ == strItr);
 }
+
+void Lexer::AddSymbol(string& oSymbol)
+{
+    m_oSymbols.push_back(oSymbol);
+}

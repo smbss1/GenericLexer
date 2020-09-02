@@ -62,6 +62,7 @@ public:
     const char* base_itr_;
     const char* s_itr_;
     const char* s_end_;
+    std::list<std::string> m_oSymbols;
 
 private:
     int IsSymbol(int c);
@@ -102,6 +103,8 @@ public:
     template <typename Allocator, template <typename, typename> class Container>
     bool IsTokenThenAssign(const TokenType eType, Container<std::string, Allocator>& oTokenList, bool bAdvance = true);
 };
+
+
 
 class ParserHelper
 {

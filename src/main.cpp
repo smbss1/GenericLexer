@@ -15,6 +15,8 @@ int main(int argc, char *argv[])
 	};
 	lexer.AddSymbols(oSymbols);
 
-	lexer.Process("void print(string strText);[]{}>>>");
+	lexer.Process("1 (2variable1 / 3variable2) 4 + variable3");
+	helper::CommutativeInserter ci;
+   	ci.Process(lexer);
 	helper::Dump(lexer);
 }

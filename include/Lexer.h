@@ -8,6 +8,24 @@
 
 class Lexer;
 
+struct LessCompare
+{
+    inline bool operator()(const std::string& s1, const std::string& s2) const
+    {
+        const std::size_t length = std::min(s1.size(),s2.size());
+
+        for (std::size_t i = 0; i < length;  ++i)
+        {
+            if (std::tolower(s1[i]) > std::tolower(s2[i]))
+                return false;
+            else if (std::tolower(s1[i]) < std::tolower(s2[i]))
+                return true;
+        }
+
+        return s1.size() < s2.size();
+    }
+};
+
 enum class TokenType {
     TokenUnknown,
 
@@ -101,8 +119,8 @@ public:
     bool Process(const std::string& strText);
     bool RequireToken(char* strText, Token* pToken);
     bool RequireTokenType(TokenType eType, Token* pToken);
-    bool TokenMatch(Token oToken, char* string);
-    bool TokenMatch(Token oToken, const std::string& strString);
+    static bool TokenMatch(Token oToken, char* string);
+    static bool TokenMatch(Token oToken, const std::string& strString);
     bool IsToken(const TokenType eType, bool bAdvance = true);
     bool IsToken(const TokenType eType, const std::string& strValue, bool bAdvance = true);
     bool IsTokenThenAssign(const TokenType eType, std::string& strToken, bool bAdvance = true);
@@ -383,64 +401,72 @@ namespace helper
         }
     }
 
-    // class CommutativeInserter : public TokenInserter
-    // {
-    // public:
+    inline bool TokenIs(Token oToken, const TokenType eType, const char* strValue)
+    {
+        if (oToken.IsType(eType) && Lexer::TokenMatch(oToken, strValue)) {
+            return (true);
+        }
+        return (false);
+    }
 
-    //     CommutativeInserter() : TokenInserter(2)
-    //     {}
+    class CommutativeInserter : public TokenInserter
+    {
+    public:
 
-    //     inline void IgnoreSymbol(const std::string& symbol)
-    //     {
-    //         oIgnoreSet.insert(symbol);
-    //     }
+        CommutativeInserter() : TokenInserter(2)
+        {}
 
-    //     inline int Insert(const Token& oT0, const Token& oT1, Token& oNewToken)
-    //     {
-    //         oNewToken.m_eType     = token::e_mul;
-    //         oNewToken.value    = "*";
-    //         oNewToken.position = oT1.position;
-    //         bool match         = false;
+        inline void IgnoreSymbol(const std::string& strSymbol)
+        {
+            oIgnoreSet.insert(strSymbol);
+        }
 
-    //         if (oT0.type == token::e_symbol)
-    //         {
-    //             if (oIgnoreSet.end() != oIgnoreSet.find(oT0.value))
-    //             {
-    //                 return -1;
-    //             }
-    //             else if (!oT0.value.empty() && ('$' == oT0.value[0]))
-    //             {
-    //                 return -1;
-    //             }
-    //         }
+        inline int Insert(const Token& oT0, const Token& oT1, Token& oNewToken)
+        {
+            oNewToken.m_eType     = TokenType::TokenSymbol;
+            oNewToken.m_strText    = "*";
+            oNewToken.m_iLength = oT1.m_iLength;
+            bool match         = false;
 
-    //         if (oT1.type == token::e_symbol)
-    //         {
-    //             if (oIgnoreSet.end() != oIgnoreSet.find(oT1.value))
-    //             {
-    //                 return -1;
-    //             }
-    //         }
+            if (oT0.m_eType == TokenType::TokenSymbol)
+            {
+                if (oIgnoreSet.find(oT0.m_strText) != oIgnoreSet.end())
+                {
+                    return -1;
+                }
+                else if (!oT0.m_strText.empty() && oT0.m_strText[0] == '$')
+                {
+                    return -1;
+                }
+            }
 
-    //                 if ((oT0.type == token::e_number     ) && (oT1.type == token::e_symbol     )) match = true;
-    //         else if ((oT0.type == token::e_number     ) && (oT1.type == token::e_lbracket   )) match = true;
-    //         else if ((oT0.type == token::e_number     ) && (oT1.type == token::e_lcrlbracket)) match = true;
-    //         else if ((oT0.type == token::e_number     ) && (oT1.type == token::e_lsqrbracket)) match = true;
-    //         else if ((oT0.type == token::e_symbol     ) && (oT1.type == token::e_number     )) match = true;
-    //         else if ((oT0.type == token::e_rbracket   ) && (oT1.type == token::e_number     )) match = true;
-    //         else if ((oT0.type == token::e_rcrlbracket) && (oT1.type == token::e_number     )) match = true;
-    //         else if ((oT0.type == token::e_rsqrbracket) && (oT1.type == token::e_number     )) match = true;
-    //         else if ((oT0.type == token::e_rbracket   ) && (oT1.type == token::e_symbol     )) match = true;
-    //         else if ((oT0.type == token::e_rcrlbracket) && (oT1.type == token::e_symbol     )) match = true;
-    //         else if ((oT0.type == token::e_rsqrbracket) && (oT1.type == token::e_symbol     )) match = true;
+            if (oT1.m_eType == TokenType::TokenSymbol)
+            {
+                if (oIgnoreSet.find(oT1.m_strText) != oIgnoreSet.end())
+                {
+                    return -1;
+                }
+            }
 
-    //         return (match) ? 1 : -1;
-    //     }
+            if ((oT0.m_eType == TokenType::TokenNumber     ) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
+            else if ((oT0.m_eType == TokenType::TokenNumber     ) && (TokenIs(oT0, TokenType::TokenSymbol, "("))) match = true;
+            else if ((oT0.m_eType == TokenType::TokenNumber     ) && (TokenIs(oT0, TokenType::TokenSymbol, "{"))) match = true;
+            else if ((oT0.m_eType == TokenType::TokenNumber     ) && (TokenIs(oT0, TokenType::TokenSymbol, "["))) match = true;
+            else if ((oT0.m_eType == TokenType::TokenAlphaNum     ) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
+            else if ((TokenIs(oT0, TokenType::TokenSymbol, ")")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
+            else if ((TokenIs(oT0, TokenType::TokenSymbol, "}")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
+            else if ((TokenIs(oT0, TokenType::TokenSymbol, "]")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
+            else if ((TokenIs(oT0, TokenType::TokenSymbol, ")")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
+            else if ((TokenIs(oT0, TokenType::TokenSymbol, "}")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
+            else if ((TokenIs(oT0, TokenType::TokenSymbol, "]")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
 
-    // private:
+            return (match) ? 1 : -1;
+        }
 
-    //     std::set<std::string,details::ilesscompare> oIgnoreSet;
-    // };
+    private:
+
+        std::set<std::string, LessCompare> oIgnoreSet;
+    };
 
     // class OperatorJoiner : public TokenJoiner
     // {
@@ -537,7 +563,7 @@ namespace helper
     //         if (
     //                 !t.value.empty()                         &&
     //                 (token::e_string != t.type)     &&
-    //                 (token::e_symbol != t.type)     &&
+    //                 (TokenType::TokenAlphaNum != t.type)     &&
     //                 details::is_bracket(t.value[0])
     //             )
     //         {
@@ -599,7 +625,7 @@ namespace helper
 
     //     bool add_replace(const std::string& target_symbol,
     //                     const std::string& replace_symbol,
-    //                     const token::Tokenype Tokenype = token::e_symbol)
+    //                     const token::Tokenype Tokenype = TokenType::TokenAlphaNum)
     //     {
     //         replace_map_t::iterator itr = replace_map_.find(target_symbol);
 
@@ -622,7 +648,7 @@ namespace helper
 
     //     bool Modify(Token& t)
     //     {
-    //         if (token::e_symbol == t.type)
+    //         if (TokenType::TokenAlphaNum == t.type)
     //         {
     //             if (replace_map_.empty())
     //                 return false;
@@ -655,10 +681,10 @@ namespace helper
 
     //     SequenceValidator() : TokenScanner(2)
     //     {
-    //     add_invalid(token::e_number,token::e_number);
+    //     add_invalid(TokenType::TokenNumber,TokenType::TokenNumber);
     //     add_invalid(token::e_string,token::e_string);
-    //     add_invalid(token::e_number,token::e_string);
-    //     add_invalid(token::e_string,token::e_number);
+    //     add_invalid(TokenType::TokenNumber,token::e_string);
+    //     add_invalid(token::e_string,TokenType::TokenNumber);
     //     add_invalid(token::e_string,token::e_colon);
     //     add_invalid(token::e_colon,token::e_string);
     //     add_invalid_seoT1(token::e_assign);
@@ -769,8 +795,8 @@ namespace helper
     //         {
     //             switch (t)
     //             {
-    //                 case token::e_number : return false;
-    //                 case token::e_symbol : return false;
+    //                 case TokenType::TokenNumber : return false;
+    //                 case TokenType::TokenAlphaNum : return false;
     //                 case token::e_string : return false;
     //                 case token::e_add    : return false;
     //                 case token::e_sub    : return false;
@@ -783,8 +809,8 @@ namespace helper
     //     {
     //         switch (base)
     //         {
-    //             case token::e_number : return false;
-    //             case token::e_symbol : return false;
+    //             case TokenType::TokenNumber : return false;
+    //             case TokenType::TokenAlphaNum : return false;
     //             case token::e_string : return false;
     //             case token::e_eof    : return false;
     //             case token::e_colon  : return false;

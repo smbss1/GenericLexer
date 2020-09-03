@@ -9,21 +9,31 @@ CC = g++
 
 EXECUTABLE	= main
 SRC_DIR = src
+TEST_SRC_DIR = tests
 
 SRC = $(shell find $(SRC_DIR) -name '*.cpp')
+MAIN_SRC = main.cpp
+MAIN_OBJ = $(MAIN_SRC:%.cpp=%.o)
 OBJ = $(SRC:%.cpp=%.o)
+
 
 CFLAGS += -std=c++17 -W -Wall -Wextra $(if $(DEBUG),-g3) $(if $(DEBUG),-DDEBUG)
 LDFLAGS = -ldl
 INC_FLAGS = -Iinclude
+
+TEST_NAME = unit_tests
+TEST_OBJ = $(TEST_SRC:%.cpp=%.o)
+
+TEST_SRC = $(shell find $(TEST_SRC_DIR) -name '*.c')
+
 
 all: bin/$(EXECUTABLE)
 
 run: all
 	@./bin/$(EXECUTABLE) $(ARGS)
 
-bin/$(EXECUTABLE): $(OBJ)
-	@$(CC) -o $@ $(OBJ) $(CFLAGS) $(INC_FLAGS) $(LDFLAGS)
+bin/$(EXECUTABLE): $(OBJ) $(MAIN_OBJ)
+	@$(CC) -o $@ $(OBJ) $(MAIN_OBJ) $(CFLAGS) $(INC_FLAGS) $(LDFLAGS)
 	
 %.o: %.cpp
 	@$(CC) $(INC_FLAGS) $(CFLAGS) -c $< -o $@
@@ -31,7 +41,7 @@ bin/$(EXECUTABLE): $(OBJ)
 
 .PHONY: clean
 clean:
-	@$(RM) -r $(OBJ)
+	@$(RM) -r $(OBJ) $(MAIN_OBJ)
 
 .PHONY: fclean
 fclean: clean
@@ -42,7 +52,12 @@ fclean: clean
 re: fclean all
 
 valgrind:
+	@make re DEBUG=1
 	valgrind --leak-check=full -s ./bin/$(EXECUTABLE) $(ARGS)
 
 dll:
 	@g++ -g3 -Wall -Wno-write-strings -g -fPIC -shared -I include ./Test.cpp -o test.so
+
+tests: fclean $(OBJ) $(TEST_OBJ)
+	@$(CC) -o $(TEST_NAME) $(OBJ) $(TEST_OBJ) $(INC_FLAGS) $(CFLAGS) $(LDFLAGS) --coverage -lcriterion
+	@./$(TEST_NAME)

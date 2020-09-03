@@ -5,6 +5,7 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <iostream>
 
 class Lexer;
 
@@ -113,19 +114,10 @@ public:
     void Begin();
     bool IsEnd(const char* strItr);
     void ScanToken();
-    Token GetToken();
-    Token PeekToken();
     Token NextToken();
     bool Process(const std::string& strText);
-    bool RequireToken(char* strText, Token* pToken);
-    bool RequireTokenType(TokenType eType, Token* pToken);
     static bool TokenMatch(Token oToken, char* string);
     static bool TokenMatch(Token oToken, const std::string& strString);
-    bool IsToken(const TokenType eType, bool bAdvance = true);
-    bool IsToken(const TokenType eType, const std::string& strValue, bool bAdvance = true);
-    bool IsTokenThenAssign(const TokenType eType, std::string& strToken, bool bAdvance = true);
-    template <typename Allocator, template <typename, typename> class Container>
-    bool IsTokenThenAssign(const TokenType eType, Container<std::string, Allocator>& oTokenList, bool bAdvance = true);
     void AddSymbol(std::string& oSymbol);
     void AddSymbol(const char* oSymbol);
     void AddSymbols(std::vector<std::string> oSymbols);
@@ -164,231 +156,6 @@ public:
     virtual ~HelperInterface()             {              }
 };
 
-class TokenScanner : public HelperInterface
-{
-public:
-
-    virtual ~TokenScanner()
-    {}
-
-    explicit TokenScanner(const std::size_t& stride) : m_iStride(stride)
-    {
-        if (stride > 4)
-        {
-            throw std::invalid_argument("TokenScanner() - Invalid stride value");
-        }
-    }
-
-    inline std::size_t process(Lexer& oLexer)
-    {
-        if (!oLexer.oTokenList.empty())
-        {
-            for (std::size_t i = 0; i < (oLexer.oTokenList.size() - m_iStride + 1); ++i)
-            {
-                // Token t;
-                switch (m_iStride)
-                {
-                    case 1 :
-                            {
-                                const Token& ooT0 = oLexer.oTokenList[i];
-
-                                if (!operator()(ooT0)) return i;
-                            }
-                            break;
-
-                    case 2 :
-                            {
-                                const Token& ooT0 = oLexer.oTokenList[i    ];
-                                const Token& ooT1 = oLexer.oTokenList[i + 1];
-
-                                if (!operator()(ooT0, ooT1)) return i;
-                            }
-                            break;
-
-                    case 3 :
-                            {
-                                const Token& ooT0 = oLexer.oTokenList[i    ];
-                                const Token& ooT1 = oLexer.oTokenList[i + 1];
-                                const Token& oT2 = oLexer.oTokenList[i + 2];
-
-                                if (!operator()(ooT0, ooT1, oT2)) return i;
-                            }
-                            break;
-
-                    case 4 :
-                            {
-                                const Token& ooT0 = oLexer.oTokenList[i    ];
-                                const Token& ooT1 = oLexer.oTokenList[i + 1];
-                                const Token& oT2 = oLexer.oTokenList[i + 2];
-                                const Token& oT3 = oLexer.oTokenList[i + 3];
-
-                                if (!operator()(ooT0, ooT1, oT2, oT3)) return i;
-                            }
-                            break;
-                }
-            }
-        }
-
-        return (oLexer.oTokenList.size() - m_iStride + 1);
-    }
-
-    virtual bool operator()(const Token&)
-    {
-        return false;
-    }
-
-    virtual bool operator()(const Token&, const Token&)
-    {
-        return false;
-    }
-
-    virtual bool operator()(const Token&, const Token&, const Token&)
-    {
-        return false;
-    }
-
-    virtual bool operator()(const Token&, const Token&, const Token&, const Token&)
-    {
-        return false;
-    }
-
-private:
-
-    std::size_t m_iStride;
-};
-
-class TokenModifier : public HelperInterface
-{
-public:
-
-    inline std::size_t Process(Lexer& oLexer)
-    {
-        std::size_t lChanges = 0;
-
-        for (std::size_t i = 0; i < oLexer.oTokenList.size(); ++i)
-        {
-            if (Modify(oLexer.oTokenList[i]))
-                lChanges++;
-        }
-
-        return lChanges;
-    }
-
-    virtual bool Modify(Token& t) = 0;
-};
-
-class TokenInserter : public HelperInterface
-{
-public:
-
-    explicit TokenInserter(const std::size_t& stride) : m_iStride(stride)
-    {
-        if (stride > 5)
-        {
-            throw std::invalid_argument("token_inserter() - Invalid stride value");
-        }
-    }
-
-    inline std::size_t Process(Lexer& oLexer)
-    {
-        if (oLexer.oTokenList.empty())
-            return 0;
-
-        std::size_t lChanges = 0;
-
-        for (std::size_t i = 0; i < (oLexer.oTokenList.size() - m_iStride + 1); ++i)
-        {
-            Token oToken;
-            int insert_index = -1;
-
-            switch (m_iStride)
-            {
-                case 1 : insert_index = Insert(oLexer.oTokenList[i], oToken);
-                        break;
-
-                case 2 : insert_index = Insert(oLexer.oTokenList[i],oLexer.oTokenList[i + 1], oToken);
-                        break;
-
-                case 3 : insert_index = Insert(oLexer.oTokenList[i],oLexer.oTokenList[i + 1],oLexer.oTokenList[i + 2], oToken);
-                        break;
-
-                case 4 : insert_index = Insert(oLexer.oTokenList[i],oLexer.oTokenList[i + 1],oLexer.oTokenList[i + 2],oLexer.oTokenList[i + 3], oToken);
-                        break;
-
-                case 5 : insert_index = Insert(oLexer.oTokenList[i],oLexer.oTokenList[i + 1],oLexer.oTokenList[i + 2],oLexer.oTokenList[i + 3],oLexer.oTokenList[i + 4], oToken);
-                        break;
-            }
-
-            if ((insert_index >= 0) && (insert_index <= (static_cast<int>(m_iStride) + 1)))
-            {
-                oLexer.oTokenList.insert(oLexer.oTokenList.begin() + (i + insert_index), oToken);
-                lChanges++;
-            }
-        }
-
-        return lChanges;
-    }
-
-    virtual inline int Insert(const Token&, Token& )
-    {
-        return -1;
-    }
-
-    virtual inline int Insert(const Token&, const Token&, Token&)
-    {
-        return -1;
-    }
-
-    virtual inline int Insert(const Token&, const Token&, const Token&, Token&)
-    {
-        return -1;
-    }
-
-    virtual inline int Insert(const Token&, const Token&, const Token&, const Token&, Token&)
-    {
-        return -1;
-    }
-
-    virtual inline int Insert(const Token&, const Token&, const Token&, const Token&, const Token&, Token&)
-    {
-        return -1;
-    }
-
-private:
-
-    std::size_t m_iStride;
-};
-
-class TokenJoiner : public HelperInterface
-{
-public:
-
-    inline std::size_t Process(Lexer& oLexer)
-    {
-        if (oLexer.oTokenList.empty())
-            return 0;
-
-        std::size_t lChanges = 0;
-
-        for (std::size_t i = 0; i < oLexer.oTokenList.size() - 1; ++i)
-        {
-            Token oToken;
-
-            if (Join(oLexer.oTokenList[i],oLexer.oTokenList[i + 1], oToken))
-            {
-                oLexer.oTokenList[i] = oToken;
-                oLexer.oTokenList.erase(oLexer.oTokenList.begin() + (i + 1));
-
-                ++lChanges;
-            }
-        }
-
-        return lChanges;
-    }
-
-    virtual bool Join(const Token&, const Token&, Token&) = 0;
-};
-
 namespace helper
 {
 
@@ -408,65 +175,6 @@ namespace helper
         }
         return (false);
     }
-
-    class CommutativeInserter : public TokenInserter
-    {
-    public:
-
-        CommutativeInserter() : TokenInserter(2)
-        {}
-
-        inline void IgnoreSymbol(const std::string& strSymbol)
-        {
-            oIgnoreSet.insert(strSymbol);
-        }
-
-        inline int Insert(const Token& oT0, const Token& oT1, Token& oNewToken)
-        {
-            oNewToken.m_eType     = TokenType::TokenSymbol;
-            oNewToken.m_strText    = "*";
-            oNewToken.m_iLength = oT1.m_iLength;
-            bool match         = false;
-
-            if (oT0.m_eType == TokenType::TokenSymbol)
-            {
-                if (oIgnoreSet.find(oT0.m_strText) != oIgnoreSet.end())
-                {
-                    return -1;
-                }
-                else if (!oT0.m_strText.empty() && oT0.m_strText[0] == '$')
-                {
-                    return -1;
-                }
-            }
-
-            if (oT1.m_eType == TokenType::TokenSymbol)
-            {
-                if (oIgnoreSet.find(oT1.m_strText) != oIgnoreSet.end())
-                {
-                    return -1;
-                }
-            }
-
-            if ((oT0.m_eType == TokenType::TokenNumber     ) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
-            else if ((oT0.m_eType == TokenType::TokenNumber     ) && (TokenIs(oT0, TokenType::TokenSymbol, "("))) match = true;
-            else if ((oT0.m_eType == TokenType::TokenNumber     ) && (TokenIs(oT0, TokenType::TokenSymbol, "{"))) match = true;
-            else if ((oT0.m_eType == TokenType::TokenNumber     ) && (TokenIs(oT0, TokenType::TokenSymbol, "["))) match = true;
-            else if ((oT0.m_eType == TokenType::TokenAlphaNum     ) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
-            else if ((TokenIs(oT0, TokenType::TokenSymbol, ")")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
-            else if ((TokenIs(oT0, TokenType::TokenSymbol, "}")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
-            else if ((TokenIs(oT0, TokenType::TokenSymbol, "]")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
-            else if ((TokenIs(oT0, TokenType::TokenSymbol, ")")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
-            else if ((TokenIs(oT0, TokenType::TokenSymbol, "}")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
-            else if ((TokenIs(oT0, TokenType::TokenSymbol, "]")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
-
-            return (match) ? 1 : -1;
-        }
-
-    private:
-
-        std::set<std::string, LessCompare> oIgnoreSet;
-    };
 
     // class OperatorJoiner : public TokenJoiner
     // {
@@ -1113,12 +821,12 @@ public:
 
     inline bool peek_token_is(const TokenType eType)
     {
-        return (oLexer.PeekToken().IsType(eType));
+        return (oCurrentToken.IsType(eType));
     }
 
     inline bool peek_token_is(const std::string& s)
     {
-        return (oLexer.TokenMatch(oLexer.PeekToken(), s));
+        return (oLexer.TokenMatch(CurrentToken(), s));
     }
 };
 

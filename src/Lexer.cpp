@@ -155,20 +155,6 @@ void Lexer::ScanToken()
     // oTokenList.push_back(token);
 }
 
-Token Lexer::GetToken()
-{
-
-}
-
-/**
- * @brief Cette fonction permet de récuperer le token actuel sans passer au suivant
- * @return un token avec le type correspondant au mot parsé
- */
-Token Lexer::PeekToken()
-{
-    return GetToken();
-}
-
 /**
  * @brief Cette fonction permet de récuperer le token actuel et de passer au suivant
  * @return un token avec le type correspondant au mot parsé
@@ -197,55 +183,6 @@ bool Lexer::TokenMatch(Token oToken, char* string)
 bool Lexer::TokenMatch(Token oToken, const string& strString)
 {
     return (oToken.GetText() == strString);
-}
-
-/**
- * @brief Cette fonction permet de vérifier que le token correspond à la string passé en paramètre
- * @param strText Le texte qui sera comparer au prochain token
- * @param pToken si non null et que la fonction retourne true, le prochain token sera stocké dans cette variable
- * @return true si le prochain token et le texte passé en paramètre correspondent et false dans le cas contraire
- */
-bool Lexer::RequireToken(char* strText, Token* pToken)
-{
-    Token oToken = GetToken();
-    bool result = false;
-
-    if (TokenMatch(oToken, strText)) {
-        // m_strBegin = m_strCurrent;
-        //Lexer->lines += token.lines_traversed;
-        result = true;
-        if (pToken) {
-            pToken->m_iLength = oToken.m_iLength;
-            string strTemp = oToken.GetText();
-            pToken->SetText(strTemp);
-            pToken->SetType(oToken.GetType());
-        }
-    }
-    return (result);
-}
-
-/**
- * @brief Cette fonction permet de vérifier que le token correspond à la string passé en paramètre
- * @param type Le type qui sera comparer au prochain token
- * @param pToken si non null et que la fonction retourne true, le prochain token sera stocké dans cette variable
- * @return true si le prochain token et le type correspondent et false dans le cas contraire
- */
-bool Lexer::RequireTokenType(TokenType eType, Token* pToken)
-{
-    Token oToken = GetToken();
-
-    if (oToken.IsType(eType)) {
-        // m_strBegin = m_strCurrent;
-        //Lexer->lines += token.lines_traversed;
-        if (pToken) {
-            pToken->m_iLength = oToken.m_iLength;
-            string strTemp = oToken.GetText();
-            pToken->SetText(strTemp);
-            pToken->SetType(oToken.GetType());
-        }
-        return (true);
-    }
-    return (false);
 }
 
 bool Lexer::IsWhitespace(char c)
@@ -293,53 +230,6 @@ int Lexer::SkipWhitespace()
         m_strCurrent++;
     }
     return (line);
-}
-
-bool Lexer::IsToken(const TokenType eType, bool bAdvance)
-{
-    Token oToken = GetToken();
-
-    if (oToken.IsType(eType) && bAdvance) {
-        NextToken();
-        return (true);
-    }
-    return (false);
-}
-
-bool Lexer::IsToken(const TokenType eType, const string& strValue, bool bAdvance)
-{
-    Token oToken = GetToken();
-    if (oToken.IsType(eType) && TokenMatch(oToken, strValue) && bAdvance)
-    {
-        NextToken();
-        return true;
-    }
-    return false;
-}
-
-bool Lexer::IsTokenThenAssign(const TokenType eType, string& strToken, bool bAdvance)
-{
-    Token oToken = GetToken();
-    if (oToken.IsType(eType) && bAdvance)
-    {
-        strToken = oToken.GetText();
-        NextToken();
-        return true;
-    }
-    return false;
-}
-
-template <typename Allocator, template <typename, typename> class Container>
-bool Lexer::IsTokenThenAssign(const TokenType eType, Container<string,Allocator>& oTokenList, bool bAdvance)
-{
-    Token oToken = GetToken();
-    if (oToken.IsType(eType) && bAdvance)
-    {
-        oTokenList.push_back(oToken.GetText());
-        NextToken();
-        return true;
-    }
-    return false;
 }
 
 bool Lexer::Process(const string& strText)

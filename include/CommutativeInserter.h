@@ -5,6 +5,7 @@
 #ifndef DIRECTORY_TEST_COMMUTATIVEINSERTER_H
 #define DIRECTORY_TEST_COMMUTATIVEINSERTER_H
 
+#include <set>
 #include "TokenInserter.h"
 
 class CommutativeInserter : public TokenInserter

@@ -18,7 +18,7 @@ OBJ = $(SRC:%.cpp=%.o)
 
 
 CFLAGS += -std=c++17 -W -Wall -Wextra $(if $(DEBUG),-g3) $(if $(DEBUG),-DDEBUG)
-LDFLAGS = -ldl
+LDFLAGS = -ldl -Llib -lcriterion
 INC_FLAGS = -Iinclude
 
 TEST_NAME = unit_tests
@@ -59,5 +59,5 @@ dll:
 	@g++ -g3 -Wall -Wno-write-strings -g -fPIC -shared -I include ./Test.cpp -o test.so
 
 tests: fclean $(OBJ) $(TEST_OBJ)
-	@$(CC) -o $(TEST_NAME) $(OBJ) $(TEST_OBJ) $(INC_FLAGS) $(CFLAGS) $(LDFLAGS) --coverage -lcriterion
+	@$(CC) -o $(TEST_NAME) $(OBJ) $(TEST_OBJ) $(INC_FLAGS) $(CFLAGS) $(LDFLAGS)
 	@./$(TEST_NAME)

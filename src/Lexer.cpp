@@ -75,19 +75,6 @@ Token Lexer::ParseSymbol()
 }
 
 /**
- * @brief Cette fonction permet de parser un tag identifiable grâce au '@'
- * @return un token contenant le nom du tag (sans le '@') et le type "tokenTag"
- * @note Un tag peut avoir des paramètres
- */
-Token Lexer::ParseTag()
-{
-    const char *start = ++m_strCurrent;
-    while (isalpha(*m_strCurrent) || isdigit(*m_strCurrent) || *m_strCurrent == '_')
-        m_strCurrent++;
-    return (Token(TokenType::TokenTag, start, m_strCurrent));
-}
-
-/**
  * @brief Cette fonction permet de parser une string
  * @return un token contenant la string et le type "tokenString"
  */

@@ -2,12 +2,13 @@
 #ifndef oLexerH_INCLUDED
 #define oLexerH_INCLUDED
 
-#include <string>
-#include <set>
 #include <vector>
 #include <iostream>
 
 class Lexer;
+class basic_string;
+
+typedef std::basic_string<char>    string;
 
 struct LessCompare
 {
@@ -93,7 +94,6 @@ private:
     Token ParseString();
     Token ParseAlpha();
     Token ParseNumber();
-    Token ParseTag();
     bool TagCheck(char **cCurrent, char t, Token& token);
     Token ParseSymbol();
     bool IsWhitespace(char c);

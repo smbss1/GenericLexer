@@ -40,8 +40,7 @@ Token::~Token()
 {
 }
 
-std::string Token::GetText()
-{
+std::string Token::GetText() const {
     return m_strText;
 }
 
@@ -111,7 +110,7 @@ bool Token::IsOneTypeOf(TokenType k1, TokenType k2)
  */
 char* Token::GetCString()
 {
-    return m_cstring;
+    return (char *) m_strText.c_str();
 }
 
 char* GetBinaryOpStrFromType(int iType)

@@ -1,11 +1,11 @@
 
-#ifndef oLexerH_INCLUDED
-#define oLexerH_INCLUDED
+#pragma once
 
 #include <vector>
+#include <map>
 #include <iostream>
+#include "Token.h"
 
-class Lexer;
 class basic_string;
 
 typedef std::basic_string<char>    string;
@@ -28,99 +28,92 @@ struct LessCompare
     }
 };
 
-enum class TokenType {
-    TokenUnknown,
-
-    TokenAlphaNum,
-    TokenNumber,
-    TokenString,
-    TokenChar,
-    TokenComment,
-    TokenTag,
-    TokenSymbol,
-
-    TokenEof,
-};
-
-class Token
+class Definition
 {
 public:
-    std::string m_strText;
-    TokenType m_eType;
-    char *m_cstring;
-    int m_iLength;
-    int m_iLinesTraversed;
-
-    Token();
-    Token(TokenType type);
-    Token(TokenType type, const char* beg, std::size_t len);
-    Token(TokenType type, const char* beg, const char* end);
-    ~Token();
-
-    std::string GetText();
-    char* GetCString();
-    void SetText(std::string& strText);
-
-    TokenType GetType();
-    std::string TypeToString();
-    void SetType(TokenType type);
-    bool IsType(TokenType type);
-    bool IsOneTypeOf(TokenType k1, TokenType k2);
-    int GetBinaryOpTypeFromToken(Lexer& oLexer);
-
-    inline bool IsError() const
+    enum class TerminalType
     {
-        return (m_eType == TokenType::TokenUnknown);
+        Unknown,
+        Symbol,
+        Statement,
+        Terminal
+    };
+
+    TerminalType m_eType;
+    std::string m_strValue;
+
+    explicit Definition()
+    {
+        m_eType = TerminalType::Unknown;
     }
+
+    explicit Definition(TerminalType eType)
+    {
+        m_eType = eType;
+    }
+
+    explicit Definition(TerminalType eType, std::string strValue)
+    {
+        m_eType = eType;
+        m_strValue = strValue;
+    }
+
+    // virtual bool isEqual(const Definition& obj) const { return obj.m_eType == m_eType; }
+
+
+//    bool operator==(const Definition& obj) {
+//        return obj.m_eType == m_eType;
+//    }
+
+//    void operator==(Definition& oDefinition)
+//    {
+//        m_eType =
+//    }
 };
 
 class Lexer
 {
-    // typedef std::vector<Token> oTokenListt;
-    // typedef std::vector<Token>::iterator oTokenListitr_t;
-
 public:
     std::vector<Token> oTokenList;
     std::vector<Token>::iterator oTokenIterator;
     std::vector<Token>::iterator oStoreTokenIterator;
     Token oEofToken;
-    const char* strBaseIterator;
-    // const char* strIterator;
     const char* strEnd;
     std::vector<std::string> m_oSymbols;
+    std::vector<char> m_oWhitespaces;
+    std::vector<char> m_oIdentifierCharacters;
+    std::vector<std::pair<char, char>> m_oAreas;
+    std::map<std::string, Definition> m_oTerminalNames;
 
 private:
     int IsSymbol(int c);
     Token ParseString();
     Token ParseAlpha();
     Token ParseNumber();
-    bool TagCheck(char **cCurrent, char t, Token& token);
     Token ParseSymbol();
     bool IsWhitespace(char c);
     int SkipComment(bool long_comment);
     int SkipWhitespace();
 
 public:
-    // const char* m_strBegin = nullptr;
     char* m_strFilename;
     const char* m_strCurrent;
     int m_iLines;
     int m_iError;
 
 public:
-	Lexer();
-    // Lexer(char* strText);
-	~Lexer();
+    Lexer();
+    ~Lexer();
     void Begin();
     bool IsEnd(const char* strItr);
     void ScanToken();
     Token NextToken();
     bool Process(const std::string& strText);
-    static bool TokenMatch(Token oToken, char* string);
+    static bool TokenMatch(Token oToken, const char* string);
     static bool TokenMatch(Token oToken, const std::string& strString);
     void AddSymbol(std::string& oSymbol);
     void AddSymbol(const char* oSymbol);
-    void AddSymbols(std::vector<std::string> oSymbols);
+    void AddSymbols(const std::vector<std::string>& oSymbols);
     void Store();
     void Restore();
     Token& PeekNextToken();
@@ -128,6 +121,7 @@ public:
     std::size_t Size() const;
     void Clear();
     bool Finished() const;
+    bool LoadGrammar(const string& strText);
 
     inline Token& operator[](const std::size_t& lIndex)
     {
@@ -144,6 +138,14 @@ public:
         else
             return oEofToken;
     }
+
+    void AddWhitespace(char cWhitespace);
+
+    void AddArea(std::pair<char, char> cRange);
+
+    void AddIdentiferRange(const char cStart, const char cEnd);
+
+    void AddIdentiferCharacter(const char c);
 };
 
 class HelperInterface
@@ -153,7 +155,7 @@ public:
     virtual void Reset()                    {              }
     virtual bool Result()                   { return true; }
     virtual std::size_t Process(Lexer&) { return 0;    }
-    virtual ~HelperInterface()             {              }
+    virtual ~HelperInterface()             = default;
 };
 
 namespace helper
@@ -170,10 +172,7 @@ namespace helper
 
     inline bool TokenIs(Token oToken, const TokenType eType, const char* strValue)
     {
-        if (oToken.IsType(eType) && Lexer::TokenMatch(oToken, strValue)) {
-            return (true);
-        }
-        return (false);
+        return oToken.IsType(eType) && Lexer::TokenMatch(oToken, strValue);
     }
 
     // class OperatorJoiner : public TokenJoiner
@@ -717,117 +716,3 @@ namespace helper
     //     token_inserter* error_token_inserter;
     // };
 }
-
-// --------------------------------------
-
-class ParserHelper
-{
-private:
-
-    Lexer oLexer;
-    Token oCurrentToken;
-
-public:
-
-    inline bool Init(const std::string str)
-    {
-        if (!oLexer.Process(str))
-        {
-            return false;
-        }
-
-        oLexer.Begin();
-
-        NextToken();
-
-        return true;
-    }
-
-    inline Lexer& GetLexer()
-    {
-        return oLexer;
-    }
-
-    inline const Lexer& GetLexer() const
-    {
-        return oLexer;
-    }
-
-    inline void NextToken()
-    {
-        oCurrentToken = oLexer.NextToken();
-    }
-
-    inline const Token& CurrentToken() const
-    {
-        return oCurrentToken;
-    }
-
-    enum token_advance_mode
-    {
-        e_hold    = 0,
-        e_advance = 1
-    };
-
-    inline void AdvanceToken(const token_advance_mode mode)
-    {
-        if (e_advance == mode)
-        {
-            NextToken();
-        }
-    }
-
-    bool IsToken(const TokenType eType, bool bAdvance)
-    {
-        if (oCurrentToken.IsType(eType) && bAdvance) {
-            NextToken();
-            return (true);
-        }
-        return (false);
-    }
-
-    bool IsToken(const TokenType eType, const std::string strValue, bool bAdvance)
-    {
-        if (oCurrentToken.IsType(eType) && oLexer.TokenMatch(oCurrentToken, strValue) && bAdvance)
-        {
-            NextToken();
-            return true;
-        }
-        return false;
-    }
-
-    bool IsTokenThenAssign(const TokenType eType, std::string& strToken, bool bAdvance)
-    {
-        if (oCurrentToken.IsType(eType) && bAdvance)
-        {
-            strToken = oCurrentToken.GetText();
-            NextToken();
-            return true;
-        }
-        return false;
-    }
-
-    template <typename Allocator, template <typename, typename> class Container>
-    bool IsTokenThenAssign(const TokenType eType, Container<std::string,Allocator>& oTokenList, bool bAdvance)
-    {
-        if (oCurrentToken.IsType(eType) && bAdvance)
-        {
-            oTokenList.push_back(oCurrentToken.GetText());
-            NextToken();
-            return true;
-        }
-        return false;
-    }
-
-    inline bool peek_token_is(const TokenType eType)
-    {
-        return (oCurrentToken.IsType(eType));
-    }
-
-    inline bool peek_token_is(const std::string& s)
-    {
-        return (oLexer.TokenMatch(CurrentToken(), s));
-    }
-};
-
-#endif

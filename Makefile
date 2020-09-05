@@ -18,7 +18,7 @@ OBJ = $(SRC:%.cpp=%.o)
 
 
 CFLAGS += -std=c++17 -W -Wall -Wextra $(if $(DEBUG),-g3) $(if $(DEBUG),-DDEBUG)
-LDFLAGS = -ldl -Llib -lcriterion
+LDFLAGS = -ldl -lcriterion
 INC_FLAGS = -Iinclude
 
 TEST_NAME = unit_tests
@@ -58,6 +58,6 @@ valgrind:
 dll:
 	@g++ -g3 -Wall -Wno-write-strings -g -fPIC -shared -I include ./Test.cpp -o test.so
 
-tests: fclean $(OBJ) $(TEST_OBJ)
-	@$(CC) -o $(TEST_NAME) $(OBJ) $(TEST_OBJ) $(INC_FLAGS) $(CFLAGS) $(LDFLAGS)
+tests: fclean
+	@$(CC) -o $(TEST_NAME) $(INC_FLAGS) $(SRC) $(TEST_SRC) $(CFLAGS) $(LDFLAGS)
 	@./$(TEST_NAME)

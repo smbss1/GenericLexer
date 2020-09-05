@@ -1,15 +1,12 @@
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.15.3)
 
 #Project Name
 project(directory_test)
 
-set(CMAKE_CXX_STANDARD 17)
-# set(CMAKE_CXX_COMPILER "g++")
-# set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
+
 # set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Werror")
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Executable Name
@@ -42,9 +39,9 @@ include_directories(${INCLUDE})
 # set(SOURCES src/mainapp.cpp src/Student.cpp)
 
 #However, the file(GLOB...) allows for wildcard additions:
-file(GLOB MAIN "main.cpp")
+file(GLOB MAIN "./main.cpp")
 file(GLOB SOURCES "./src/*.cpp")
-file(GLOB TEST_SOURCES "./tests/*.c")
+file(GLOB TEST_SOURCES "./tests/*.cpp")
 file(GLOB HEADERS "./include/*.h")
 
 add_executable(${EXECUTABLE_NAME} ${MAIN} ${SOURCES} ${HEADERS})
@@ -60,9 +57,11 @@ add_executable(${EXECUTABLE_NAME} ${MAIN} ${SOURCES} ${HEADERS})
 
 # add_executable(The_project ${TEST_SOURCES})
 # target_link_libraries(app ${CRITERION_LIBRARY})
+add_subdirectory(GoogleTest)
 
-add_executable(${TEST_EXECUTABLE_NAME} ${SOURCES} ${HEADERS} ${TEST_SOURCES})
-target_link_libraries(${TEST_EXECUTABLE_NAME} criterion)
+add_executable(${TEST_EXECUTABLE_NAME} ${TEST_SOURCES} ${SOURCES} ${HEADERS})
+target_link_libraries(${TEST_EXECUTABLE_NAME} gtest gtest_main)
+# target_link_libraries(${TEST_EXECUTABLE_NAME} criterion)
 #target_compile_features(${TEST_EXECUTABLE_NAME} PUBLIC cxx_std_17)
 # target_link_libraries(l${EXECUTABLE_NAME} ${PROJECT_LINK_LIBS} )
 # add_executable(${EXECUTABLE_NAME} ${SOURCES})

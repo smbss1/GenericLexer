@@ -1,7 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <algorithm>
 #include "Lexer.h"
+#include "GrammarParser.h"
 
 using namespace std;
 
@@ -23,10 +25,8 @@ Lexer::~Lexer() { }
 Token Lexer::ParseAlpha()
 {
     const char *start = m_strCurrent;
-
-    while (isalpha(*m_strCurrent) || isdigit(*m_strCurrent) || *m_strCurrent == '_') {
+    while (std::find(m_oIdentifierCharacters.begin(), m_oIdentifierCharacters.end(), *m_strCurrent) != m_oIdentifierCharacters.end())
         m_strCurrent++;
-    }
     return (Token(TokenType::TokenAlphaNum, start, m_strCurrent));
 }
 
@@ -53,13 +53,6 @@ Token Lexer::ParseNumber()
 Token Lexer::ParseSymbol()
 {
     const char *start = m_strCurrent;
-    // static char *symbols[] = {
-    //     "(", ")", "[", "]",
-    //     "{", "}", ";",
-    //     "::", "->", ":",
-    //     "*", "+", "-",
-    //     "/", "<<", ">>", ",","!"
-    // };
     
     for (; *m_strCurrent; m_strCurrent++)
         if (isalnum(*m_strCurrent))
@@ -74,21 +67,36 @@ Token Lexer::ParseSymbol()
     return (Token(TokenType::TokenUnknown, start, distance(start, m_strCurrent)));
 }
 
+struct IsInArea : std::binary_function<std::pair<int,int>, char, bool>
+{
+    bool operator()(const std::pair<char, char>& p, char c) const
+    {
+        return p.first == c;
+    }
+};
+
 /**
  * @brief Cette fonction permet de parser une string
  * @return un token contenant la string et le type "tokenString"
  */
 Token Lexer::ParseString()
 {
-    const char *start = m_strCurrent;
+    const char *strFirstArea = m_strCurrent;
+    // const char *start = ++m_strCurrent;
+    const char *start = m_strCurrent++;
+    std::vector<std::pair<char, char>>::const_iterator it;
+    it = std::find_if(m_oAreas.begin(), m_oAreas.end(), std::bind2nd(IsInArea(), *strFirstArea));
 
-    while (*m_strCurrent && *m_strCurrent != '"') {
+    while (*m_strCurrent != it->second && *m_strCurrent) {
         if (*m_strCurrent == '\\' && m_strCurrent[1])
             ++m_strCurrent;
         ++m_strCurrent;
     }
-    if (*m_strCurrent == '"')
+
+    // Token oToken = Token(TokenType::TokenString, start, m_strCurrent);
+    if (*m_strCurrent == it->second) {
         ++m_strCurrent;
+    }
     return (Token(TokenType::TokenString, start, m_strCurrent));
 }
 
@@ -117,27 +125,27 @@ int Lexer::IsSymbol(int c)
  */
 void Lexer::ScanToken()
 {
-    // m_strCurrent = (char *) m_strBegin;
     int line = SkipWhitespace();
     // Token token;
 
-    if (IsEnd(m_strCurrent)) {
+    if (IsEnd(m_strCurrent))
         return;
-	}
-    if (!isalnum(*m_strCurrent)) {
-        oTokenList.push_back(ParseSymbol());
-    }
-    else if (*m_strCurrent == '"') {
-        oTokenList.push_back(ParseString());
+
+    std::vector<std::pair<char, char>>::const_iterator itArea = std::find_if(m_oAreas.begin(), m_oAreas.end(), std::bind2nd(IsInArea(), *m_strCurrent));
+
+    if (isalpha(*m_strCurrent)) {
+        oTokenList.push_back(ParseAlpha());
+    } else if (isdigit(*m_strCurrent)) {
+        oTokenList.push_back(ParseNumber());
     } else {
-        if (isalpha(*m_strCurrent)) {
-        	oTokenList.push_back(ParseAlpha());
-		} else if (isdigit(*m_strCurrent)) {
-			oTokenList.push_back(ParseNumber());
-		} else {
-            oTokenList.push_back(Token(TokenType::TokenUnknown));
-		}
-	}
+        if (itArea != m_oAreas.end() && *m_strCurrent == itArea->first)
+            oTokenList.push_back(ParseString());
+        else if (!isalnum(*m_strCurrent))
+            oTokenList.push_back(ParseSymbol());
+        else
+            oTokenList.emplace_back(TokenType::TokenUnknown);
+    }
+
     // token.m_iLinesTraversed = line;
     // oTokenList.push_back(token);
 }
@@ -162,7 +170,7 @@ Token Lexer::NextToken()
  * @param string Le texte qui sera comparer au token
  * @return true si le token et la string correspondent et false dans le cas contraire
  */
-bool Lexer::TokenMatch(Token oToken, char* string)
+bool Lexer::TokenMatch(Token oToken, const char* string)
 {
     return (!strncmp(oToken.GetCString(), string, oToken.m_iLength) && string[oToken.m_iLength] == 0);
 }
@@ -174,7 +182,8 @@ bool Lexer::TokenMatch(Token oToken, const string& strString)
 
 bool Lexer::IsWhitespace(char c)
 {
-    return (c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '/');
+    // return (c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '/');
+    return std::find(m_oWhitespaces.begin(), m_oWhitespaces.end(), c) != m_oWhitespaces.end();
 }
 
 int Lexer::SkipComment(bool long_comment)
@@ -221,15 +230,14 @@ int Lexer::SkipWhitespace()
 
 bool Lexer::Process(const string& strText)
 {
-    strBaseIterator = strText.data();
     m_strCurrent    = strText.data();
     strEnd    = strText.data() + strText.size();
-	// m_strBegin = strText.c_str();
 
     oEofToken.m_strText.assign(strEnd, strEnd);
-    // if (strBaseIterator)
-    //     position = std::distance(strBaseIterator, strEnd);
     oTokenList.clear();
+
+    if (strText.empty())
+        return false;
 
     while (!IsEnd(m_strCurrent))
     {
@@ -286,7 +294,6 @@ std::size_t Lexer::Size() const
 
 void Lexer::Clear()
 {
-    strBaseIterator = 0;
     m_strCurrent = 0;
     strEnd = 0;
     oTokenList.clear();
@@ -306,13 +313,85 @@ void Lexer::AddSymbol(string& oSymbol)
 
 void Lexer::AddSymbol(const char* oSymbol)
 {
-    m_oSymbols.push_back(oSymbol);
+    m_oSymbols.emplace_back(oSymbol);
 }
 
-void Lexer::AddSymbols(vector<string> oSymbols)
+void Lexer::AddSymbols(const vector<string>& oSymbols)
 {
-    for (auto symbol : oSymbols)
-    {
+    for (const auto& symbol : oSymbols)
         m_oSymbols.push_back(symbol);
+}
+
+void Lexer::AddWhitespace(char cWhitespace)
+{
+    m_oWhitespaces.push_back(cWhitespace);
+}
+
+void Lexer::AddArea(std::pair<char, char> cRange)
+{
+    m_oAreas.emplace_back(cRange);
+}
+
+void Lexer::AddIdentiferCharacter(const char c)
+{
+    if (!(std::find(m_oIdentifierCharacters.begin(), m_oIdentifierCharacters.end(), c) != m_oIdentifierCharacters.end()))
+        m_oIdentifierCharacters.emplace_back(c);
+}
+
+void Lexer::AddIdentiferRange(const char cStart, const char cEnd)
+{
+    for (char i = cStart; i <= cEnd; i++)
+        AddIdentiferCharacter(i);
+}
+
+
+bool Lexer::LoadGrammar(const string& strText)
+{
+    GrammarParser grammar;
+
+    grammar.GetLexer().AddSymbol("<");
+    grammar.GetLexer().AddSymbol(">");
+    grammar.GetLexer().AddSymbol("'");
+    grammar.GetLexer().AddSymbol(":");
+    grammar.GetLexer().AddSymbol("+");
+    grammar.GetLexer().AddSymbol("-");
+    grammar.GetLexer().AddSymbol("*");
+    grammar.GetLexer().AddWhitespace(' ');
+    grammar.GetLexer().AddWhitespace('\n');
+    grammar.GetLexer().AddWhitespace('\t');
+    grammar.GetLexer().AddWhitespace('\r');
+    grammar.GetLexer().AddArea(make_pair<char, char>('[', ']'));
+    grammar.GetLexer().AddArea(make_pair<char, char>('\'', '\''));
+    grammar.GetLexer().AddIdentiferRange('a', 'z');
+    grammar.GetLexer().AddIdentiferRange('A', 'Z');
+    grammar.GetLexer().AddIdentiferRange('0', '9');
+    grammar.GetLexer().AddIdentiferCharacter('_');
+
+    if (!grammar.Process(strText))
+        return false;
+
+    m_oTerminalNames = grammar.GetLexer().m_oTerminalNames;
+    string whitespaces = grammar.GetLexer().m_oTerminalNames["Whitespace"].m_strValue;
+    string areaWord = grammar.GetLexer().m_oTerminalNames["Word"].m_strValue;
+
+    for (char& whitespace : whitespaces)
+        m_oWhitespaces.emplace_back(whitespace);
+
+    for (int i = 0; i < areaWord.size(); i++)
+    {
+        if (isalnum(areaWord[i]) && areaWord[i + 1] == '-' && isalnum(areaWord[i + 2]))
+        {
+            AddIdentiferRange(areaWord[i], areaWord[i + 2]);
+            i += 2;
+        }
+        else if (areaWord[i])
+            AddIdentiferCharacter(areaWord[i]);
     }
+
+    for (auto& itTerminal : grammar.GetLexer().m_oTerminalNames)
+        if (itTerminal.second.m_eType == Definition::TerminalType::Symbol)
+            AddSymbol(itTerminal.second.m_strValue);
+
+    helper::Dump(grammar.GetLexer());
+    return true;
 }

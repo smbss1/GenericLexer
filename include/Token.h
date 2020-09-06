@@ -27,7 +27,7 @@ class Token
 public:
     std::string m_strText;
     TokenType m_eType;
-    char *m_cstring;
+    std::string m_strType;
     int m_iLength;
     int m_iLinesTraversed;
 
@@ -35,6 +35,7 @@ public:
     Token(TokenType type);
     Token(TokenType type, const char* beg, std::size_t len);
     Token(TokenType type, const char* beg, const char* end);
+    Token(std::string type, const char* beg, const char* end);
     ~Token();
 
     std::string GetText() const;
@@ -50,6 +51,7 @@ public:
 
     inline bool IsError() const
     {
-        return (m_eType == TokenType::TokenUnknown);
+        return (false);
+        // return (m_eType == TokenType::TokenUnknown);
     }
 };

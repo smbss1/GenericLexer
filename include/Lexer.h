@@ -5,6 +5,7 @@
 #include <map>
 #include <iostream>
 #include "Token.h"
+#include "DFA.h"
 
 class basic_string;
 
@@ -79,6 +80,14 @@ public:
 //    }
 };
 
+struct IsInA : std::binary_function<std::pair<std::string, std::string>, char, bool>
+{
+    bool operator()(std::pair<std::string, std::string>& p, char c) const
+    {
+        return p.second[0] == c;
+    }
+};
+
 class Lexer
 {
 public:
@@ -88,12 +97,16 @@ public:
     Token oEofToken;
     const char* strEnd;
     std::vector<std::string> m_oSymbols;
+    std::map<std::string, std::string> m_oAllDefines;
+    std::map<std::string, std::string> m_oAreas;
     std::vector<char> m_oWhitespaces;
     std::vector<char> m_oIdentifierCharacters;
     std::vector<char> m_oNumbers;
-    std::vector<std::pair<char, char>> m_oAreas;
+    // std::vector<std::pair<char, char>> m_oAreas;
     std::map<std::string, Definition> m_oTerminalNames;
     std::map<std::string, std::vector<Definition>> m_oNonTerminalNames;
+    // DFA<char> oDfa;
+    DFA oDfa;
 
 private:
     int IsSymbol(int c);
@@ -108,6 +121,7 @@ private:
 public:
     char* m_strFilename;
     const char* m_strCurrent;
+    std::string m_strText;
     int m_iLines;
     int m_iError;
 
@@ -160,6 +174,10 @@ public:
     void AddNumber(char c);
 
     void AddNumberRange(char cStart, char cEnd);
+    void Define(string strId, string strValue);
+
+    void DefineArea(std::string strId, char cStart, char cEnd);
+
 };
 
 class HelperInterface
@@ -180,7 +198,7 @@ namespace helper
         for (std::size_t i = 0; i < oLexer.Size(); ++i)
         {
             Token oToken = oLexer[i];
-            std::cout << "Token[" << i << "] " << oToken.TypeToString() << " --> '" << oToken.GetText() << "'" << std::endl;
+            std::cout << "Token[" << i << "] " << oToken.m_strType << " --> '" << oToken.GetText() << "'" << std::endl;
         }
     }
 

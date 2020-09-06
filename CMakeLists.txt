@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.15.3)
 #Project Name
 project(directory_test)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 # set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_EXTENSIONS OFF)
@@ -39,12 +39,13 @@ include_directories(${INCLUDE})
 # set(SOURCES src/mainapp.cpp src/Student.cpp)
 
 #However, the file(GLOB...) allows for wildcard additions:
-file(GLOB MAIN "./main.cpp")
-file(GLOB SOURCES "./src/*.cpp")
+set(MAIN "main.cpp")
+file(GLOB SOURCES "./src/Lexer/*.cpp" "./src/Parser/*.cpp" "./src/*.cpp")
 file(GLOB TEST_SOURCES "./tests/*.cpp")
 file(GLOB HEADERS "./include/*.h")
 
 add_executable(${EXECUTABLE_NAME} ${MAIN} ${SOURCES} ${HEADERS})
+add_executable(main_dfa ${MAIN} "src/DFA.cpp" "include/DFA.h")
 
 # add_library(criterion_lib STATIC IMPORTED)
 #set_target_properties(criterion_lib PROPERTIES IMPORTED_LOCATION
@@ -61,9 +62,12 @@ add_subdirectory(GoogleTest)
 
 add_executable(${TEST_EXECUTABLE_NAME} ${TEST_SOURCES} ${SOURCES} ${HEADERS})
 target_link_libraries(${TEST_EXECUTABLE_NAME} gtest gtest_main)
+
+add_executable(define_test "tests/TestDefine.cpp" ${SOURCES} ${HEADERS})
+target_link_libraries(define_test gtest gtest_main)
 # target_link_libraries(${TEST_EXECUTABLE_NAME} criterion)
 #target_compile_features(${TEST_EXECUTABLE_NAME} PUBLIC cxx_std_17)
 # target_link_libraries(l${EXECUTABLE_NAME} ${PROJECT_LINK_LIBS} )
 # add_executable(${EXECUTABLE_NAME} ${SOURCES})
 
-add_executable(evalexpr EvalExpr.cpp)
+# add_executable(evalexpr EvalExpr.cpp)

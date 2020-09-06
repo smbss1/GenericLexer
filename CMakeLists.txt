@@ -65,3 +65,5 @@ target_link_libraries(${TEST_EXECUTABLE_NAME} gtest gtest_main)
 #target_compile_features(${TEST_EXECUTABLE_NAME} PUBLIC cxx_std_17)
 # target_link_libraries(l${EXECUTABLE_NAME} ${PROJECT_LINK_LIBS} )
 # add_executable(${EXECUTABLE_NAME} ${SOURCES})
+
+add_executable(evalexpr EvalExpr.cpp)

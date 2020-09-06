@@ -91,8 +91,7 @@ TEST_F(LexerTest, shouldContain1TokenOfTypeAlphaNumIfStringIsHello)
     TokenType expectedType = TokenType::TokenAlphaNum;
 
     Lexer oLexer;
-    oLexer.LoadGrammar("terminal:"
-                      "<Word>: [a-zA-Z]");
+    oLexer.LoadGrammar("<Word>: [a-zA-Z];");
 
 
     oLexer.Process("Hello");
@@ -112,8 +111,7 @@ TEST_F(LexerTest, shouldContain1TokenOfTypeAlphaNumIfStringIsHello_World)
     TokenType expectedType = TokenType::TokenAlphaNum;
 
     Lexer oLexer;
-    ASSERT_EQ(oLexer.LoadGrammar("terminal:"
-                       "<Word>: [A-z]"), true);
+    ASSERT_EQ(oLexer.LoadGrammar("<Word>: [A-z];"), true);
     oLexer.Process("Hello_World");
     oLexer.Begin();
 
@@ -133,9 +131,8 @@ TEST_F(LexerTest, shouldContain2TokenOfTypeAlphaNumIfStringIsHelloWorld)
     Lexer oLexer;
 
     oLexer.AddWhitespace(' ');
-    ASSERT_EQ(oLexer.LoadGrammar("terminal:"
-                       "<Whitespace>:[ ]"
-                       "<Word>: [A-z]"), true);
+    ASSERT_EQ(oLexer.LoadGrammar("<Whitespace>:[ ];"
+                                 "<Word>: [A-z];"), true);
     oLexer.Process("Hello World");
     oLexer.Begin();
 
@@ -157,9 +154,8 @@ TEST_F(LexerTest, shouldContain2TokenOfTypeAlphaNumIfStringIsHelloWorldWithALotO
 
     Lexer oLexer;
 
-    ASSERT_EQ(oLexer.LoadGrammar("terminal:"
-                       "<Whitespace>:[ \n\t]"
-                       "<Word>: [A-z]"), true);
+    ASSERT_EQ(oLexer.LoadGrammar("<Whitespace>:[ \n\t];"
+                                 "<Word>: [A-z];"), true);
     oLexer.Process("Hello\n    \t     \t     \n World");
     oLexer.Begin();
 
@@ -180,9 +176,8 @@ TEST_F(LexerTest, shouldContain1TokenOfTypeNumberIfStringIs150)
     TokenType expectedType = TokenType::TokenNumber;
 
     Lexer oLexer;
-    ASSERT_EQ(oLexer.LoadGrammar("terminal:"
-                       "<Whitespace>:[ \n\t]"
-                       "<Word>: [0-9]"), true);
+    ASSERT_EQ(oLexer.LoadGrammar("<Whitespace>:[ \n\t];"
+                               "<Number>: [0-9];"), true);
     oLexer.Process("150");
     oLexer.Begin();
     Token oNextToken = oLexer.NextToken();
@@ -199,9 +194,8 @@ TEST_F(LexerTest, shouldContain2TokenOfTypeNumberAndAlphaNumIfStringIsHello150)
     TokenType eHello150Type = TokenType::TokenAlphaNum;
 
     Lexer oLexer;
-    ASSERT_EQ(oLexer.LoadGrammar("terminal:"
-                       "<Whitespace>:[ \n\t]"
-                       "<Word>: [A-z0-9]"), true);
+    ASSERT_EQ(oLexer.LoadGrammar("<Whitespace>:[ \n\t];"
+                               "<Word>: [A-z0-9];"), true);
     oLexer.Process("Hello150");
     oLexer.Begin();
     Token oHello150Token = oLexer.NextToken();
@@ -219,9 +213,9 @@ TEST_F(LexerTest, shouldContain2TokenOfTypeNumberAndAlphaNumIfStringIsHelloAnd15
     TokenType e150Type = TokenType::TokenNumber;
 
     Lexer oLexer;
-    ASSERT_EQ(oLexer.LoadGrammar("terminal:"
-                       "<Whitespace>:[ \n\t]"
-                       "<Word>: [A-z0-9]"), true);
+    ASSERT_EQ(oLexer.LoadGrammar("<Whitespace>:[ \n\t];"
+                                 "<Word>: [A-z];"
+                                 "<Number>: [0-9];"), true);
     oLexer.AddWhitespace(' ');
 
     oLexer.Process("Hello 150");

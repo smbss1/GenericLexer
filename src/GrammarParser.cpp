@@ -93,28 +93,91 @@
     return parser.process(func_def,fd);
 }*/
 
+//int factor(char **str)
+//{
+//    int nbr1;
+//    int nbr2 = 0;
+//    char op;
+//
+//    nbr1 = my_strtol(*str, str);
+//    while (*str[0] == '*' || *str[0] == '/' || *str[0] == '%') {
+//        op = *str[0];
+//        *str += 1;
+//        nbr2 = my_strtol(*str, str);
+//        nbr1 = do_op(nbr1, nbr2, op);
+//    }
+//    return (nbr1);
+//}
+//
+//int summand(char **str)
+//{
+//    int nbr1;
+//    int nbr2 = 0;
+//    char op;
+//
+//    nbr1 = my_strtol(*str, str);
+//    while (*str[0] != '\0' && *str[0] != ')') {
+//        op = *str[0];
+//        *str += 1;
+//        if (op == '+' || op == '-')
+//            nbr2 = factor(str);
+//        else
+//            nbr2 = my_strtol(*str, str);
+//        nbr1 = do_op(nbr1, nbr2, op);
+//    }
+//    return (nbr1);
+//}
+
 bool GrammarParser::Process(const std::string& strText) {
     if (!Init(strText))
         return false;
-    std::string name;
-    std::string content;
-    if (IsToken(TokenType::TokenAlphaNum,"terminal") && IsToken(TokenType::TokenSymbol, ":")) {
-        while (GetLexer().oTokenIterator != GetLexer().oTokenList.end())
+
+    while (GetLexer().oTokenIterator != GetLexer().oTokenList.end())
+    {
+        std::string strName;
+        std::string strNameRef;
+        std::string strContent;
+        std::vector<Definition> vDefinitions;
+
+
+        if (!IsToken(TokenType::TokenSymbol, "<"))
+            return false;
+        if (!IsTokenThenAssign(TokenType::TokenAlphaNum, strName))
+            return false;
+        if (!IsToken(TokenType::TokenSymbol,">"))
+            return false;
+        if (!IsToken(TokenType::TokenSymbol,":"))
+            return false;
+        while (!IsToken(TokenType::TokenSymbol, ";"))
         {
-            if (!IsToken(TokenType::TokenSymbol, "<"))
-                return false;
-            if (!IsTokenThenAssign(TokenType::TokenAlphaNum, name))
-                return false;
-            if (!IsToken(TokenType::TokenSymbol,">"))
-                return false;
-            if (!IsToken(TokenType::TokenSymbol,":"))
-                return false;
-            if (IsTokenThenAssign(TokenType::TokenString, content))
-                if (content[0] == '[')
-                    GetLexer().m_oTerminalNames.insert(std::make_pair(name, Definition(Definition::TerminalType::Terminal, string(content.c_str() + 1, content.size() - 2))));
-                else if (content[0] == '\'')
-                    GetLexer().m_oTerminalNames.insert(std::make_pair(name, Definition(Definition::TerminalType::Symbol, string(content.c_str() + 1, content.size() - 2))));
+            if (IsToken(TokenType::TokenSymbol, "<")) {
+                if (IsTokenThenAssign(TokenType::TokenAlphaNum, strNameRef))
+                    if (IsToken(TokenType::TokenSymbol, ">"))
+                        vDefinitions.emplace_back(Definition::TerminalType::TerminalRef, strNameRef);
+            }
+            else if (IsTokenThenAssign(TokenType::TokenString, strContent)) {
+                if (!IsToken(TokenType::TokenSymbol, ";")) {
+                    if (strContent[0] == '[')
+                        vDefinitions.emplace_back(Definition::TerminalType::Terminal,
+                                                  string(strContent.c_str() + 1, strContent.size() - 2));
+                    else if (strContent[0] == '\'')
+                        vDefinitions.emplace_back(Definition::TerminalType::Symbol,
+                                                  string(strContent.c_str() + 1, strContent.size() - 2));
+                } else {
+                    if (strContent[0] == '[') {
+                        GetLexer().m_oTerminalNames.insert(std::make_pair(strName, Definition(Definition::TerminalType::Terminal, string(strContent.c_str() + 1, strContent.size() - 2))));
+                        break;
+                    }
+                    else if (strContent[0] == '\'') {
+                        GetLexer().m_oTerminalNames.insert(std::make_pair(strName, Definition(Definition::TerminalType::Symbol, string(strContent.c_str() + 1, strContent.size() - 2))));
+                        break;
+                    }
+                }
+            }
         }
+
+        if (!vDefinitions.empty())
+            GetLexer().m_oNonTerminalNames.insert(std::make_pair(strName, vDefinitions));
     }
 
     return true;

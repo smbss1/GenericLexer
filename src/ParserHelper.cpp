@@ -73,7 +73,7 @@ bool ParserHelper::IsToken(const TokenType eType, const char* strValue, bool bAd
     return false;
 }
 
-bool ParserHelper::IsTokenThenAssign(const TokenType eType, std::string& strToken, bool bAdvance)
+bool ParserHelper::IsTokenThenAssign(TokenType eType, std::string& strToken, bool bAdvance)
 {
     if (oCurrentToken.IsType(eType) && bAdvance)
     {
@@ -84,10 +84,33 @@ bool ParserHelper::IsTokenThenAssign(const TokenType eType, std::string& strToke
     return false;
 }
 
+bool ParserHelper::IsTokenThenAssign(TokenType eType, const char* strValue, std::string& strToken, bool bAdvance)
+{
+    if (oCurrentToken.IsType(eType) && oLexer.TokenMatch(oCurrentToken, strValue) && bAdvance)
+    {
+        strToken = oCurrentToken.GetText();
+        NextToken();
+        return true;
+    }
+    return false;
+}
+
 template <typename Allocator, template <typename, typename> class Container>
-bool ParserHelper::IsTokenThenAssign(const TokenType eType, Container<std::string,Allocator>& oTokenList, bool bAdvance)
+bool ParserHelper::IsTokenThenAssign(TokenType eType, Container<std::string,Allocator>& oTokenList, bool bAdvance)
 {
     if (oCurrentToken.IsType(eType) && bAdvance)
+    {
+        oTokenList.push_back(oCurrentToken.GetText());
+        NextToken();
+        return true;
+    }
+    return false;
+}
+
+template <typename Allocator, template <typename, typename> class Container>
+bool ParserHelper::IsTokenThenAssign(TokenType eType, const char* strValue, Container<std::string,Allocator>& oTokenList, bool bAdvance)
+{
+    if (oCurrentToken.IsType(eType) && oLexer.TokenMatch(oCurrentToken, strValue) && bAdvance)
     {
         oTokenList.push_back(oCurrentToken.GetText());
         NextToken();

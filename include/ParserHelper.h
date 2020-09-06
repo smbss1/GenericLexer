@@ -51,6 +51,10 @@ public:
 
     bool peek_token_is(const std::string& s);
 
+    bool IsTokenThenAssign(TokenType eType, const char *strValue, string &strToken, bool bAdvance);
+
+    template <typename Allocator, template <typename, typename> class Container>
+    bool IsTokenThenAssign(TokenType eType, const char *strValue, Container<std::string,Allocator>& oTokenList, bool bAdvance);
 };
 
 

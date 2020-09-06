@@ -36,11 +36,13 @@ public:
         Unknown,
         Symbol,
         Statement,
-        Terminal
+        Terminal,
+        TerminalRef
     };
 
     TerminalType m_eType;
     std::string m_strValue;
+    std::vector<std::string> m_strValues;
 
     explicit Definition()
     {
@@ -57,6 +59,12 @@ public:
         m_eType = eType;
         m_strValue = strValue;
     }
+
+//    explicit Definition(TerminalType eType, std::vector<std::string> strValues)
+//    {
+//        m_eType = eType;
+//        m_strValues = strValues;
+//    }
 
     // virtual bool isEqual(const Definition& obj) const { return obj.m_eType == m_eType; }
 
@@ -82,8 +90,10 @@ public:
     std::vector<std::string> m_oSymbols;
     std::vector<char> m_oWhitespaces;
     std::vector<char> m_oIdentifierCharacters;
+    std::vector<char> m_oNumbers;
     std::vector<std::pair<char, char>> m_oAreas;
     std::map<std::string, Definition> m_oTerminalNames;
+    std::map<std::string, std::vector<Definition>> m_oNonTerminalNames;
 
 private:
     int IsSymbol(int c);
@@ -143,9 +153,13 @@ public:
 
     void AddArea(std::pair<char, char> cRange);
 
-    void AddIdentiferRange(const char cStart, const char cEnd);
+    void AddIdentiferRange(char cStart, char cEnd);
 
-    void AddIdentiferCharacter(const char c);
+    void AddIdentiferCharacter(char c);
+
+    void AddNumber(char c);
+
+    void AddNumberRange(char cStart, char cEnd);
 };
 
 class HelperInterface

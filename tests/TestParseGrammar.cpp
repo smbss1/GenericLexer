@@ -40,21 +40,6 @@ protected:
 };
 
 // Expression <= Number '+' Number
-/*TEST_F(ParseGrammarTest, shouldReturnTrueIfGrammarRulesAreLoaded)
-{
-    Lexer oLexer;
-    bool expected = false;
-
-    oLexer.AddSymbol("<=");
-    oLexer.AddSymbol("'");
-    oLexer.AddSymbol("+");
-    oLexer.Process("Expression <= Number '+' Number");
-    helper::Dump(oLexer);
-    EXPECT_EQ(expected, expected);
-}*/
-
-
-// Expression <= Number '+' Number
 TEST_F(ParseGrammarTest, shouldReturnTrueIfGrammarRulesAreLoaded)
 {
     Lexer oLexer;
@@ -68,9 +53,9 @@ TEST_F(ParseGrammarTest, shouldReturnTLetterTerminalIfFoundWhitespaceNameTermina
 {
     Lexer oLexer;
     bool expected = true;
-    std::string code = "terminal:"
-                       "<Whitespace> : [t]";
+    std::string code = "<Whitespace> : [t];";
     bool result = oLexer.LoadGrammar(code);
+    helper::Dump(oLexer);
 
     EXPECT_EQ(result, expected);
     EXPECT_EQ(oLexer.m_oTerminalNames.size(), 1);
@@ -82,8 +67,7 @@ TEST_F(ParseGrammarTest, shouldReturnSpaceCharacterIfFoundWhitespaceNameTerminal
 {
     Lexer oLexer;
     bool expected = true;
-    std::string code = "terminal:"
-                       "<Whitespace> : [ ]";
+    std::string code = "<Whitespace> : [ ];";
     bool result = oLexer.LoadGrammar(code);
 
     EXPECT_EQ(result, expected);
@@ -96,8 +80,7 @@ TEST_F(ParseGrammarTest, shouldReturnAllCharacterInTheAreaIfFoundWhitespaceNameT
 {
     Lexer oLexer;
     bool expected = true;
-    std::string code = "terminal:"
-                       "<Whitespace> : [ \t\n\r]";
+    std::string code = "<Whitespace> : [ \t\n\r];";
     bool result = oLexer.LoadGrammar(code);
 
     EXPECT_EQ(result, expected);
@@ -110,8 +93,7 @@ TEST_F(ParseGrammarTest, shouldContainsAllCharactersInWhitespaceListIfFoundWhite
 {
     Lexer oLexer;
     bool expected = true;
-    std::string code = "terminal:"
-                       "<Whitespace> : [ \t\n\r]";
+    std::string code = "<Whitespace> : [ \t\n\r];";
     bool result = oLexer.LoadGrammar(code);
 
     EXPECT_EQ(result, expected);
@@ -129,8 +111,7 @@ TEST_F(ParseGrammarTest, shouldReturnAllCharactersInLowLetterAreaIfFoundWordTerm
 {
     Lexer oLexer;
     bool expected = true;
-    std::string code = "terminal:"
-                       "<Word>: [a-z]";
+    std::string code = "<Word>: [a-z];";
     bool result = oLexer.LoadGrammar(code);
 
     EXPECT_EQ(result, expected);
@@ -143,8 +124,7 @@ TEST_F(ParseGrammarTest, shouldReturnRangeCharactersOfLowLetterAreaIfFoundWordTe
 {
     Lexer oLexer;
     bool expected = true;
-    std::string code = "terminal:"
-                       "<Word>: [a-d]";
+    std::string code = "<Word>: [a-d];";
     bool result = oLexer.LoadGrammar(code);
 
     EXPECT_EQ(result, expected);
@@ -162,8 +142,7 @@ TEST_F(ParseGrammarTest, shouldReturnCommaSymbolIfFoundSingleQuote)
 {
     Lexer oLexer;
     bool expected = true;
-    std::string code = "terminal:"
-                       "<Comma>: ','";
+    std::string code = "<Comma>: ',';";
     bool result = oLexer.LoadGrammar(code);
 
     EXPECT_EQ(result, expected);
@@ -176,8 +155,7 @@ TEST_F(ParseGrammarTest, shouldContainCommaInSymbolListIfFoundSingleQuote)
 {
     Lexer oLexer;
     bool expected = true;
-    std::string code = "terminal:"
-                       "<Comma>: ','";
+    std::string code = "<Comma>: ',';";
     bool result = oLexer.LoadGrammar(code);
 
     EXPECT_EQ(result, expected);
@@ -186,4 +164,49 @@ TEST_F(ParseGrammarTest, shouldContainCommaInSymbolListIfFoundSingleQuote)
     EXPECT_EQ(oLexer.m_oTerminalNames["Comma"].m_strValue, ",");
     ASSERT_EQ(oLexer.m_oSymbols.size(), 1);
     EXPECT_EQ(oLexer.m_oSymbols[0], ",");
+}
+
+TEST_F(ParseGrammarTest, shouldReturnRangeCharactersOfNumberInNumberListIfFoundNumberTerminal)
+{
+    Lexer oLexer;
+    bool expected = true;
+    std::string code = "<Number>: [0-3];";
+    bool result = oLexer.LoadGrammar(code);
+
+    EXPECT_EQ(result, expected);
+    EXPECT_EQ(oLexer.m_oTerminalNames.size(), 1);
+    EXPECT_EQ(oLexer.m_oTerminalNames["Number"].m_eType, Definition::TerminalType::Terminal);
+    EXPECT_EQ(oLexer.m_oTerminalNames["Number"].m_strValue, "0-3");
+    ASSERT_EQ(oLexer.m_oNumbers.size(), 4);
+    EXPECT_EQ(oLexer.m_oNumbers[0], '0');
+    EXPECT_EQ(oLexer.m_oNumbers[1], '1');
+    EXPECT_EQ(oLexer.m_oNumbers[2], '2');
+    EXPECT_EQ(oLexer.m_oNumbers[3], '3');
+}
+
+TEST_F(ParseGrammarTest, shouldReturnTheExpressionArrayIfFoundExpressionTerminal)
+{
+    Lexer oLexer;
+    bool expected = true;
+    std::string code = "<Number>: [0-3]; <Expression>: <Number> '+' <Number>;";
+    bool result = oLexer.LoadGrammar(code);
+    std::map<std::string, std::string> d;
+
+    EXPECT_EQ(result, expected);
+    ASSERT_EQ(oLexer.m_oTerminalNames.size(), 1);
+    ASSERT_EQ(oLexer.m_oNonTerminalNames.size(), 1);
+    EXPECT_EQ(oLexer.m_oTerminalNames["Number"].m_eType, Definition::TerminalType::Terminal);
+    EXPECT_EQ(oLexer.m_oTerminalNames["Number"].m_strValue, "0-3");
+    ASSERT_EQ(oLexer.m_oNumbers.size(), 4);
+    EXPECT_EQ(oLexer.m_oNumbers[0], '0');
+    EXPECT_EQ(oLexer.m_oNumbers[1], '1');
+    EXPECT_EQ(oLexer.m_oNumbers[2], '2');
+    EXPECT_EQ(oLexer.m_oNumbers[3], '3');
+    ASSERT_EQ(oLexer.m_oNonTerminalNames["Expression"].size(), 3);
+    EXPECT_EQ(oLexer.m_oNonTerminalNames["Expression"][0].m_strValue, "Number");
+    EXPECT_EQ(oLexer.m_oNonTerminalNames["Expression"][0].m_eType, Definition::TerminalType::TerminalRef);
+    EXPECT_EQ(oLexer.m_oNonTerminalNames["Expression"][1].m_strValue, "+");
+    EXPECT_EQ(oLexer.m_oNonTerminalNames["Expression"][1].m_eType, Definition::TerminalType::Symbol);
+    EXPECT_EQ(oLexer.m_oNonTerminalNames["Expression"][2].m_strValue, "Number");
+    EXPECT_EQ(oLexer.m_oNonTerminalNames["Expression"][2].m_eType, Definition::TerminalType::TerminalRef);
 }

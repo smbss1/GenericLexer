@@ -38,7 +38,7 @@ Token Lexer::ParseNumber()
 {
     const char *start = m_strCurrent;
 
-    while (isdigit(*m_strCurrent))
+    while (std::find(m_oNumbers.begin(), m_oNumbers.end(), *m_strCurrent) != m_oNumbers.end())
         m_strCurrent++;
     return (Token(TokenType::TokenNumber, start, m_strCurrent));
 }
@@ -308,12 +308,14 @@ bool Lexer::Finished() const
 
 void Lexer::AddSymbol(string& oSymbol)
 {
-    m_oSymbols.push_back(oSymbol);
+    if (!(std::find(m_oSymbols.begin(), m_oSymbols.end(), oSymbol) != m_oSymbols.end()))
+        m_oSymbols.push_back(oSymbol);
 }
 
 void Lexer::AddSymbol(const char* oSymbol)
 {
-    m_oSymbols.emplace_back(oSymbol);
+    if (!(std::find(m_oSymbols.begin(), m_oSymbols.end(), oSymbol) != m_oSymbols.end()))
+        m_oSymbols.emplace_back(oSymbol);
 }
 
 void Lexer::AddSymbols(const vector<string>& oSymbols)
@@ -344,6 +346,18 @@ void Lexer::AddIdentiferRange(const char cStart, const char cEnd)
         AddIdentiferCharacter(i);
 }
 
+void Lexer::AddNumber(const char c)
+{
+    if (!(std::find(m_oNumbers.begin(), m_oNumbers.end(), c) != m_oNumbers.end()))
+        m_oNumbers.emplace_back(c);
+}
+
+void Lexer::AddNumberRange(const char cStart, const char cEnd)
+{
+    for (char i = cStart; i <= cEnd; i++)
+        AddNumber(i);
+}
+
 
 bool Lexer::LoadGrammar(const string& strText)
 {
@@ -356,8 +370,9 @@ bool Lexer::LoadGrammar(const string& strText)
     grammar.GetLexer().AddSymbol("+");
     grammar.GetLexer().AddSymbol("-");
     grammar.GetLexer().AddSymbol("*");
-    grammar.GetLexer().AddWhitespace(' ');
+    grammar.GetLexer().AddSymbol(";");
     grammar.GetLexer().AddWhitespace('\n');
+    grammar.GetLexer().AddWhitespace(' ');
     grammar.GetLexer().AddWhitespace('\t');
     grammar.GetLexer().AddWhitespace('\r');
     grammar.GetLexer().AddArea(make_pair<char, char>('[', ']'));
@@ -371,8 +386,11 @@ bool Lexer::LoadGrammar(const string& strText)
         return false;
 
     m_oTerminalNames = grammar.GetLexer().m_oTerminalNames;
+    m_oNonTerminalNames = grammar.GetLexer().m_oNonTerminalNames;
+
     string whitespaces = grammar.GetLexer().m_oTerminalNames["Whitespace"].m_strValue;
     string areaWord = grammar.GetLexer().m_oTerminalNames["Word"].m_strValue;
+    string numbers = grammar.GetLexer().m_oTerminalNames["Number"].m_strValue;
 
     for (char& whitespace : whitespaces)
         m_oWhitespaces.emplace_back(whitespace);
@@ -388,10 +406,20 @@ bool Lexer::LoadGrammar(const string& strText)
             AddIdentiferCharacter(areaWord[i]);
     }
 
+    for (int i = 0; i < numbers.size(); i++)
+    {
+        if (numbers[i] && numbers[i + 1] == '-' && numbers[i + 2])
+        {
+            AddNumberRange(numbers[i], numbers[i + 2]);
+            i += 2;
+        }
+        else if (numbers[i])
+            AddNumber(numbers[i]);
+    }
+
     for (auto& itTerminal : grammar.GetLexer().m_oTerminalNames)
         if (itTerminal.second.m_eType == Definition::TerminalType::Symbol)
             AddSymbol(itTerminal.second.m_strValue);
 
-    helper::Dump(grammar.GetLexer());
     return true;
 }

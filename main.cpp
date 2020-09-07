@@ -75,10 +75,9 @@ int main(int argc, char *argv[]) {
 //    for(auto i = tk.begin(); i < tk.end(); i++)
 //        std::cout<< i->lexeme << " : " << token_name(i->type) << std::endl;
 
-    oLexer.Define("Alpha","abcdefghijklmnopqrstuvwxyz0123456789");
-    oLexer.Define("Alpha","0123456789", false);
-    oLexer.Define("Whitespace"," ", false);
-    oLexer.Define("Integer","0123456789");
+    oLexer.Define("Alpha","[a-z]*[0-9]*");
+    oLexer.Define("WHITESPACE"," ");
+    oLexer.Define("Integer","[0-9]*");
     oLexer.Define("Plus","+");
     oLexer.Process("19 + 2 + d + 4bdfc484");
 

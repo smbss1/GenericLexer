@@ -454,15 +454,17 @@ void Lexer::Define(std::string strId, std::string strValue)
 {
     // m_oAllDefines.insert(make_pair(strId, strValue));
     if (!oDfa.StateExist(strId))
-    {
         oDfa.AddState(DFAState(false, strId));
-    }
+
     int iState = oDfa.GetStateID(strId);
 
+    int iOpenSquareBracketPos = 0;
+    bool bStar = false;
     for (int i = 0; i < strValue.size(); i++) {
         if (strValue[i] == '[')
         {
-            bool firstPosition = i == 0;
+            iOpenSquareBracketPos = i;
+            bool bFirstPosition = i == 0;
             while (strValue[i] != ']' && strValue[i])
             {
                 char first = strValue[i];
@@ -470,11 +472,15 @@ void Lexer::Define(std::string strId, std::string strValue)
                 {
                     char last = strValue[i + 2];
                     i += 2;
-                    if (firstPosition)
+                    if (bFirstPosition && !bStar) {
                         for (char c = first; c <= last; c++)
                             oDfa.AddTransition(0, c, iState);
-                    for (char c = first; c <= last; c++)
-                        oDfa.AddTransition(iState, c, iState);
+                    }
+                    if (bStar) {
+                        bStar = false;
+                        for (char c = first; c <= last; c++)
+                            oDfa.AddTransition(iState, c, iState);
+                    }
                 }
                 else if (first == '.') {
                     for (int j = 32; j < 127; j++) {
@@ -483,7 +489,7 @@ void Lexer::Define(std::string strId, std::string strValue)
                     }
                 }
                 else if (first != '[' && first != ']') {
-                    if (firstPosition)
+                    if (bFirstPosition)
                         oDfa.AddTransition(0, first, iState);
                     oDfa.AddTransition(iState, first, iState);
                 }
@@ -496,22 +502,23 @@ void Lexer::Define(std::string strId, std::string strValue)
                 oDfa.AddTransition(iState, (char) j, iState);
             }
         }
+        else if (strValue[i] == '*') {
+            bStar = true;
+            strValue.erase(strValue.begin() + i);
+            if (strValue[i - 1] == ']') {
+                i = iOpenSquareBracketPos - 1;
+                std::cout << "BStar" << std::endl;
+                std::cout << strId << std::endl;
+            }
+            else
+                i--;
+        }
         else {
             oDfa.AddTransition(0, strValue[i], iState);
-            oDfa.AddTransition(iState, strValue[i], iState);
+            if (bStar)
+                oDfa.AddTransition(iState, strValue[i], iState);
         }
     }
-//    if (bIsSingle) {
-//        for (auto &c : strValue)
-//            oDfa.AddTransition(0, c, iState);
-//    } else {
-//        for (auto &c : strValue) {
-//            oDfa.AddTransition(0, c, iState);
-//            oDfa.AddTransition(iState, c, iState);
-//        }
-//    }
-
-    // dfa.AddTransition(dfa.GetStateID("WHITESPACE"), ' ', dfa.GetStateID("WHITESPACE"));
 }
 
 void Lexer::DefineArea(const std::string strId, char cStart, char cEnd)

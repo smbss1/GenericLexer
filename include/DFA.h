@@ -48,20 +48,38 @@ struct DFATransition
     bool (*condition)(char); //a bool-returning and char-taking function pointer which is used to test whether this transition is to be taken.
     char m_cValue;
     int m_iToStateID;
+
+    bool operator==(const DFATransition& oTransition) const
+    {
+        return  oTransition.condition == condition &&
+                oTransition.m_cValue == m_cValue &&
+                oTransition.m_iToStateID == m_iToStateID;
+    }
 };
 
 struct DFAState
 {
-    DFAState(bool bHasAction, std::string strActionName, int iDefaultToStateID);
-
     int m_iID; //unique ID associated with every state
     bool m_bHasAction; //indicates whether any action should be taken when DFA is in this state
+    bool m_bIsFinal;
     int m_iNumberOfTransitions; //number of outgoing transitions excluding the default (other) transition
     std::string m_strActionName; //the string based on which action is taken
     std::vector<DFATransition> m_oTransitions; //list of outgoing transitions
     int m_iDefaultToStateID; //the default (other) transition. This is taken when no other transition is possible
 
-    DFAState(bool bHasAction, std::string strActionName);
+    DFAState(bool bHasAction, std::string strActionName, bool bIsFinal = false);
+
+public:
+    bool operator==(const DFAState & oState) const
+    {
+        return  oState.m_iID == m_iID &&
+                oState.m_bHasAction == m_bHasAction &&
+                oState.m_bIsFinal == m_bIsFinal &&
+                oState.m_iNumberOfTransitions == m_iNumberOfTransitions &&
+                oState.m_strActionName == m_strActionName &&
+                oState.m_oTransitions == m_oTransitions &&
+                oState.m_iDefaultToStateID == m_iDefaultToStateID;
+    }
 };
 
 class DFA
@@ -69,6 +87,7 @@ class DFA
     int m_iStartStateID;
     int m_iNumberOfStates;
     std::vector<DFAState> m_oStates;
+    std::vector<DFAState> m_oFinalStates;
 
 public:
     DFA();
@@ -80,7 +99,7 @@ public:
 
     void Reset(); //makes the dfa ready for consumption. i.e. sets the current state to start state.
     bool MakeNextTransition(char c);
-    void AddState(DFAState oNewState);
+    int AddState(DFAState oNewState);
     void AddTransition(int iFromStateID, bool (*condition)(char), int iToStateID);
 
     void AddTransition(int iFromStateID, char value, int iToStateID);
@@ -94,6 +113,10 @@ public:
     std::string GetStateName(int iId);
 
     bool StateExist(const std::string &strActionName);
+
+    bool IsAccepting();
+
+    bool IsAccepting(char inp);
 };
 
 #endif

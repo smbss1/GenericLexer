@@ -81,6 +81,7 @@
 
 #include <utility>
 #include <iostream>
+#include <algorithm>
 
 //void dfa_addState(DFA* pDFA, DFAState* newState)
 //{
@@ -116,20 +117,12 @@
 //    dfa->currentStateID = dfa->startStateID;
 //}
 
-DFAState::DFAState(bool bHasAction, std::string strActionName)
+DFAState::DFAState(bool bHasAction, std::string strActionName, bool bIsFinal)
 {
     m_strActionName = std::move(strActionName);
     m_iDefaultToStateID = -1;
     m_bHasAction = bHasAction;
-    m_iID = -1;
-    m_iNumberOfTransitions = 0;
-}
-
-DFAState::DFAState(bool bHasAction, std::string strActionName, int iDefaultToStateID)
-{
-    m_strActionName = std::move(strActionName);
-    m_iDefaultToStateID = iDefaultToStateID;
-    m_bHasAction = bHasAction;
+    m_bIsFinal = bIsFinal;
     m_iID = -1;
     m_iNumberOfTransitions = 0;
 }
@@ -178,6 +171,26 @@ bool DFA::StateChanged()
     return m_iPreviousStateID != m_iCurrentStateID;
 }
 
+bool DFA::IsAccepting()
+{
+    for (auto& state : m_oFinalStates) {
+        if (state == m_oStates[m_iCurrentStateID])
+            return true;
+    }
+    return false;
+}
+
+bool DFA::IsAccepting(char c)
+{
+    DFAState& oCurrentState = m_oStates[m_iCurrentStateID];
+    for (int i = 0; i < oCurrentState.m_iNumberOfTransitions; i++)
+    {
+        if (oCurrentState.m_oTransitions[i].m_cValue == c)
+            return std::find(m_oFinalStates.begin(), m_oFinalStates.end(), m_oStates[oCurrentState.m_oTransitions[i].m_iToStateID]) != m_oFinalStates.end();
+    }
+    return false;
+}
+
 bool DFA::MakeNextTransition(char c)
 {
     DFAState& oCurrentState = m_oStates[m_iCurrentStateID];
@@ -196,11 +209,18 @@ bool DFA::MakeNextTransition(char c)
     return false;
 }
 
-void DFA::AddState(DFAState oNewState)
+int DFA::AddState(DFAState oNewState)
 {
+    auto itState = std::find(m_oStates.begin(), m_oStates.end(), oNewState);
+    if (itState != m_oStates.end())
+        return itState->m_iID;
+
     oNewState.m_iID = m_iNumberOfStates;
     m_oStates.push_back(oNewState);
     m_iNumberOfStates++;
+    if (oNewState.m_bIsFinal)
+        m_oFinalStates.push_back(oNewState);
+    return oNewState.m_iID;
 }
 
 int DFA::GetStateID(const std::string& strActionName)
@@ -232,6 +252,11 @@ std::string DFA::GetStateName(int iId)
 void DFA::AddTransition(int iFromStateID, bool (*condition)(char), int iToStateID)
 {
     DFAState& state = m_oStates[iFromStateID];
+
+    auto itTransition= std::find(state.m_oTransitions.begin(), state.m_oTransitions.end(), DFATransition(condition, iToStateID));
+    if (itTransition != state.m_oTransitions.end())
+        return;
+
     state.m_oTransitions.emplace_back(condition, iToStateID);
     state.m_iNumberOfTransitions++;
 }
@@ -239,6 +264,11 @@ void DFA::AddTransition(int iFromStateID, bool (*condition)(char), int iToStateI
 void DFA::AddTransition(int iFromStateID, char cValue, int iToStateID)
 {
     DFAState& state = m_oStates[iFromStateID];
+
+    auto itTransition= std::find(state.m_oTransitions.begin(), state.m_oTransitions.end(), DFATransition(cValue, iToStateID));
+    if (itTransition != state.m_oTransitions.end())
+        return;
+
     state.m_oTransitions.emplace_back(cValue, iToStateID);
     state.m_iNumberOfTransitions++;
 }

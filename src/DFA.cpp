@@ -223,6 +223,13 @@ int DFA::AddState(DFAState oNewState)
     return oNewState.m_iID;
 }
 
+void DFA::PrintStates()
+{
+    for (auto& state : m_oStates) {
+        std::cout << state.m_strActionName << std::endl;
+    }
+}
+
 int DFA::GetStateID(const std::string& strActionName)
 {
     for (auto& itState : m_oStates) {

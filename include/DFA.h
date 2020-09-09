@@ -117,6 +117,8 @@ public:
     bool IsAccepting();
 
     bool IsAccepting(char inp);
+
+    void PrintStates();
 };
 
 #endif

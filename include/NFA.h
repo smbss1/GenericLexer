@@ -11,6 +11,10 @@
 #include <utility>
 #include <vector>
 #include <iostream>
+#include <algorithm>
+
+class DFA;
+
 //
 //const std::string EPSILON = "ε";
 //
@@ -158,7 +162,8 @@
 //
 
 
-struct trans {
+struct trans
+{
     int vertex_from;
     int vertex_to;
     char trans_symbol;
@@ -167,7 +172,7 @@ struct trans {
 
 class NFA {
 public:
-    std::vector<int> vertex;
+    std::vector<int> vVertex;
     std::vector<trans> transitions;
     int final_state;
 
@@ -175,46 +180,46 @@ public:
 
     }
 
-    int get_vertex_count() {
-        return vertex.size();
+    int GetVertexCount() {
+        return vVertex.size();
     }
 
-    void set_vertex(int no_vertex) {
+    void SetVertex(int no_vertex) {
         for(int i = 0; i < no_vertex; i++) {
-            vertex.push_back(i);
+            vVertex.push_back(i);
         }
     }
 
-    void set_transition(int vertex_from, int vertex_to, char trans_symbol) {
-        trans new_trans;
-        new_trans.vertex_from = vertex_from;
-        new_trans.vertex_to = vertex_to;
-        new_trans.trans_symbol = trans_symbol;
-        transitions.push_back(new_trans);
+    void SetTransition(int vertex_from, int vertex_to, char trans_symbol) {
+        trans oNewTransition;
+        oNewTransition.vertex_from = vertex_from;
+        oNewTransition.vertex_to = vertex_to;
+        oNewTransition.trans_symbol = trans_symbol;
+        transitions.push_back(oNewTransition);
     }
 
-    void set_final_state(int fs) {
+    void SetFinalState(int fs) {
         final_state = fs;
     }
 
-    int get_final_state() {
+    int GetFinalState() {
         return final_state;
     }
 
-    void display() {
-        trans new_trans;
+    void Display() {
+        trans oNewTransition;
         std::cout<<"\n";
         for(int i = 0; i < transitions.size(); i++) {
-            new_trans = transitions.at(i);
-            std::cout<<"q"<<new_trans.vertex_from<<" -> q"<<new_trans.vertex_to<<" : Symbol - "<<new_trans.trans_symbol<<std::endl;
+            oNewTransition = transitions.at(i);
+            std::cout << "q" << oNewTransition.vertex_from << " -> q" << oNewTransition.vertex_to << " : Symbol - "<< oNewTransition.trans_symbol << std::endl;
         }
-        std::cout<<"\nThe final state is q"<<get_final_state()<<std::endl;
+        std::cout << "\nThe final state is q" << GetFinalState() << std::endl;
     }
 
     /**
      * Get the set of reachable state from each specified vertex.
      */
-    std::vector<char> find_possible_input_symbols(const std::vector<int>& vertexs) {
+    std::vector<char> FindPossibleInputSymbols(const std::vector<int>& vertexs) {
         std::vector<char> result;
 
         for (int i = 0; i < vertexs.size(); i++) {
@@ -230,12 +235,12 @@ public:
         return result;
     }
 
-    std::vector<int> eclosure(const std::vector<int>& X) {
+    std::vector<int> Eclosure(const std::vector<int>& X) {
         std::vector<int> result;
-        std::vector<bool> visited (get_vertex_count(), false);
+        std::vector<bool> visited (GetVertexCount(), false);
 
         for (int i = 0; i < X.size(); i++) {
-            eclosure(X.at(i), result, visited);
+            Eclosure(X.at(i), result, visited);
         }
 
         sort(result.begin(), result.end());
@@ -246,7 +251,7 @@ public:
         return result;
     }
 
-    void eclosure(int x, std::vector<int>& result, std::vector<bool>& visited) {
+    void Eclosure(int x, std::vector<int>& result, std::vector<bool>& visited) {
         result.push_back(x);
 
         for (int i = 0; i < transitions.size(); i++) {
@@ -255,13 +260,13 @@ public:
                 int y = it.vertex_to;
                 if (!visited.at(y)) {
                     visited.at(y) = true;
-                    eclosure(y, result, visited);
+                    Eclosure(y, result, visited);
                 }
             }
         }
     }
 
-    std::vector<int> move(const std::vector<int>& T, const char trans_symbol) {
+    std::vector<int> Move(const std::vector<int>& T, const char trans_symbol) {
         std::vector<int> result;
 
         for (int j = 0; j < T.size(); j++) {
@@ -288,101 +293,6 @@ public:
 #endif
 
         return result;
-    }
-
-};
-
-std::string join(std::vector<int> v, std::string delim);
-
-class DFA {
-public:
-
-    std::vector<trans>        transitions;
-    std::vector<std::vector<int> > entries;
-    std::vector<bool>         marked;
-    std::vector<int>          final_states;
-
-    /**
-     * Add newly_created entry into DFA
-     */
-    int add_entry(std::vector<int> entry) {
-        entries.push_back(entry);
-        marked.push_back(false);
-        return entries.size() - 1;
-    }
-
-    /**
-     * Return the array position of the next unmarked entry
-     */
-    int next_unmarked_entry_idx() {
-        for (int i = 0; i < marked.size(); i++) {
-            if (!marked.at(i)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    /**
-     * mark the entry specified by index as marked (marked = true)
-     */
-    void mark_entry(int idx) {
-        marked.at(idx) = true;
-    }
-
-    std::vector<int> entry_at(int i) {
-        return entries.at(i);
-    }
-
-    int find_entry(std::vector<int> entry) {
-        for (int i = 0; i < entries.size(); i++) {
-            std::vector<int> it = entries.at(i);
-            if (it == entry) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    void set_final_state(int nfa_fs) {
-        for (int i = 0; i < entries.size(); i++) {
-            std::vector<int> entry = entries.at(i);
-
-            for (int j = 0; j < entry.size(); j++) {
-                int vertex = entry.at(j);
-                if (vertex == nfa_fs) {
-                    final_states.push_back(i);
-                }
-            }
-        }
-
-    }
-
-    std::string get_final_state() {
-        return join(final_states, ",");
-    }
-
-    void set_transition(int vertex_from, int vertex_to, char trans_symbol) {
-        trans new_trans;
-        new_trans.vertex_from = vertex_from;
-        new_trans.vertex_to = vertex_to;
-        new_trans.trans_symbol = trans_symbol;
-        transitions.push_back(new_trans);
-    }
-
-
-    void display() {
-        trans new_trans;
-        std::cout<<"\n";
-        for(int i = 0; i < transitions.size(); i++) {
-            new_trans = transitions.at(i);
-            std::cout<<"q"<<new_trans.vertex_from<<" {"<<join(entries.at(new_trans.vertex_from), ",")
-                <<"} -> q"<<new_trans.vertex_to<<" {"<<join(entries.at(new_trans.vertex_to), ",")
-                <<"} : Symbol - "<<new_trans.trans_symbol<<std::endl;
-        }
-        std::cout<<"\nThe final state is q : "<<join(final_states, ",")<<std::endl;
     }
 };
 

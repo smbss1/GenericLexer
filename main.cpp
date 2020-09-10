@@ -435,35 +435,36 @@
 //
 //    return NFA(start, end);
 //}
-//
-//string insert_concat(string regexp){
-//    string ret = "";
-//    char c, c2;
-//    for(unsigned int i = 0; i < regexp.size(); i++){
-//        c = regexp[i];
-//        if(i + 1 < regexp.size()){
-//            c2 = regexp[i + 1];
-//            ret += c;
-//            if(c != '(' && c2 != ')' && c != '+' && c2 != '+' && c2 != '*' && c != '|' && c2 != '|'){
-//                ret += '.';
-//            }
-//        }
-//    }
-//    ret += regexp[regexp.size() - 1];
-//    return ret;
-//}
-//
-//int priority(char c){
+
+string insert_concat(string regexp){
+   string ret = "(";
+   char c, c2;
+   for(unsigned int i = 0; i < regexp.size(); i++){
+       c = regexp[i];
+       if(i + 1 < regexp.size()){
+           c2 = regexp[i + 1];
+           ret += c;
+           if(c != '(' && c2 != ')' && c != '+' && c2 != '+' && c2 != '*' && c != '|' && c2 != '|'){
+               ret += '.';
+           }
+       }
+   }
+   ret += regexp[regexp.size() - 1];
+   ret += ')';
+   return ret;
+}
+
+// int priority(char c){
 //    switch(c){
 //        case '*': return 3;
 //        case '.': return 2;
 //        case '+': return 1;
 //        default: return 0;
 //    }
-//}
-//
-//std::string regexp_to_postfix(string regexp)
-//{
+// }
+
+// std::string regexp_to_postfix(string regexp)
+// {
 //    std::string postfix = "";
 //    std::stack<char> op;
 //    char c;
@@ -472,7 +473,7 @@
 //        if (isalpha(regexp[i]))
 //        {
 //            postfix += regexp[i];
-//
+
 //        } else {
 //            switch (regexp[i]) {
 //                case '(':
@@ -504,7 +505,7 @@
 //        op.pop();
 //    }
 //    return postfix;
-//}
+// }
 //
 //NFA toNFA(const std::string& postfixExp) {
 //    if(postfixExp.empty()) {
@@ -560,84 +561,72 @@
 
 int main(int argc, char *argv[])
 {
-    std::cout<<"\n\nThe Thompson's Construction Algorithm takes a regular expression as an input "
-        <<"and returns its corresponding Non-Deterministic Finite Automaton \n\n";
-    std::cout<<"\n\nThe basic building blocks for constructing the NFA are : \n";
+    // std::cout << "\n\nThe Thompson's Construction Algorithm takes a regular expression as an input " << "and returns its corresponding Non-Deterministic Finite Automaton \n\n";
+    // std::cout << "\n\nThe basic building blocks for constructing the NFA are : \n";
 
-    NFA a, b;
+    // NFA a, b;
 
-    std::cout<<"\nFor the regular expression segment : (a)";
-    a.set_vertex(2);
-    a.set_transition(0, 1, 'a');
-    a.set_final_state(1);
-    a.display();
-    //	getch();
+    // std::cout << "\nFor the regular expression segment : (a)";
+    // a.SetVertex(2);
+    // a.SetTransition(0, 1, 'a');
+    // a.SetFinalState(1);
+    // a.Display();
+    // //	getch();
 
-    std::cout<<"\nFor the regular expression segment : (b)";
-    b.set_vertex(2);
-    b.set_transition(0, 1, 'b');
-    b.set_final_state(1);
-    b.display();
-    //	getch();
+    // std::cout << "\nFor the regular expression segment : (b)";
+    // b.SetVertex(2);
+    // b.SetTransition(0, 1, 'b');
+    // b.SetFinalState(1);
+    // b.Display();
+    // //	getch();
 
-    std::cout<<"\nFor the regular expression segment [Concatenation] : (a.b)";
-    NFA ab = concat(a, b);
-    ab.display();
-    //	getch();
+    // std::cout << "\nFor the regular expression segment [Concatenation] : (a.b)";
+    // NFA ab = concat(a, b);
+    // ab.Display();
+    // //	getch();
 
-    std::cout<<"\nFor the regular expression segment [Kleene Closure] : (a*)";
-    NFA a_star = kleene(a);
-    a_star.display();
-    //	getch();
+    // std::cout << "\nFor the regular expression segment [Kleene Closure] : (a*)";
+    // NFA a_star = kleene(a);
+    // a_star.Display();
+    // //	getch();
 
-    std::cout<<"\nFor the regular expression segment [Or] : (a|b)";
-    int no_of_selections;
-    no_of_selections = 2;
-    std::vector<NFA> selections(no_of_selections, NFA());
-    selections.at(0) = a;
-    selections.at(1) = b;
-    NFA a_or_b = or_selection(selections, no_of_selections);
-    a_or_b.display();
-    //	getch();
+    // std::cout << "\nFor the regular expression segment [Or] : (a|b)";
+    // int no_of_selections;
+    // no_of_selections = 2;
+    // std::vector<NFA> selections(no_of_selections, NFA());
+    // selections.at(0) = a;
+    // selections.at(1) = b;
+    // NFA a_or_b = or_selection(selections, no_of_selections);
+    // a_or_b.Display();
+    // //	getch();
 
 
-    string re;
-    std::set<char> symbols;
+    string regex;
 
-    std::cout<<"\n*****\t*****\t*****\n";
-    std::cout<<"\nFORMAT : \n"
-        <<"> Explicitly mention concatenation with a '.' operator \n"
-        <<"> Enclose every concatenation and or section by parantheses \n"
-        <<"> Enclose the entire regular expression with parantheses \n\n";
+    std::cout << "\n*****\t*****\t*****\n";
+    std::cout << "\nFORMAT : \n"
+        << "> Explicitly mention concatenation with a '.' operator \n"
+        << "> Enclose every concatenation and or section by parantheses \n"
+        << "> Enclose the entire regular expression with parantheses \n\n";
 
-    std::cout<<"For example : \nFor the regular expression (a.(b|c))  -- \n";
+    std::cout << "For example : \nFor the regular expression (a.(b|c))  -- \n";
     NFA example_nfa = re_to_nfa("(a.(b|c))");
-    example_nfa.display();
+    example_nfa.Display();
 
-    std::cout<<"\n\nEnter the regular expression in the above mentioned format - \n\n";
-    std::cin>>re;
+    std::cout << "\n\nEnter the regular expression in the above mentioned format - \n\n";
+    std::cin >> regex;
+    std::string conc = insert_concat(regex);
 
-    /*	char cur_sym;
-        int counter = 0;
-        for(string::iterator it = re.begin(); it != re.end(); ++it) {
-        cur_sym = (*it);
-        if(cur_sym != '(' && cur_sym != ')' && cur_sym != '*' && cur_sym != '|' && cur_sym != '.') {
-        cout<<cur_sym<<" "<<counter++<<endl;
-        symbols.insert(cur_sym);
-        }
-        }
-        */
-
-    std::cout<<"\n\nThe required NFA has the transitions : \n\n";
+    std::cout << "\n\nThe required NFA has the transitions : \n\n";
 
     NFA required_nfa;
-    required_nfa = re_to_nfa(re);
-    required_nfa.display();
+    required_nfa = re_to_nfa(conc);
+    required_nfa.Display();
 
-    std::cout<<"\n\n==> DFA : \n\n";
+    std::cout << "\n\n==> DFA : \n\n";
 
     DFA required_dfa = nfa_to_dfa(required_nfa);
-    required_dfa.display();
+    required_dfa.Display();
 
     return 0;
 }

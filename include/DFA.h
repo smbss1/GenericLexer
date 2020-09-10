@@ -1,9 +1,8 @@
 #pragma once
 
-#include <vector>
-#include <set>
-#include <map>
-//
+// #include <set>
+// #include <map>
+// //
 //template<typename T>
 //class DFA
 //{
@@ -38,6 +37,7 @@
 
 #include <string>
 #include <vector>
+#include "NFA.h"
 
 //
 //struct DFATransition
@@ -128,5 +128,90 @@
 //
 //    void ReplaceTransition(int iFromStateID, char cValue, int iPrevToStateId, int iNewToStateID);
 //};
+
+std::string Join(std::vector<int> v, std::string delim);
+
+class DFA {
+public:
+
+    std::vector<trans>        transitions;
+    std::vector<std::vector<int>> m_vEntries;
+    std::vector<bool>         vMarked;
+    std::vector<int>          vFinalStates;
+
+    /**
+     * Add newly_created entry into DFA
+     */
+    int AddEntry(std::vector<int> vEntry) {
+        m_vEntries.push_back(vEntry);
+        vMarked.push_back(false);
+        return m_vEntries.size() - 1;
+    }
+
+    /**
+     * Return the array position of the next unmarked entry
+     */
+    int NextUnmarkedEntryIndex() {
+        for (int i = 0; i < vMarked.size(); i++) {
+            if (!vMarked.at(i)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * mark the entry specified by index as marked (marked = true)
+     */
+    void MarkEntry(int idx) {
+        vMarked.at(idx) = true;
+    }
+
+    std::vector<int> EntryAt(int i) {
+        return m_vEntries.at(i);
+    }
+
+    int FindEntry(std::vector<int> entry) {
+        for (int i = 0; i < m_vEntries.size(); i++) {
+            std::vector<int> vIt = m_vEntries.at(i);
+            if (vIt == entry) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    void SetFinalState(int iNfaFS) {
+        for (int i = 0; i < m_vEntries.size(); i++) {
+            std::vector<int> entry = m_vEntries.at(i);
+
+            for (int j = 0; j < entry.size(); j++) {
+                int vertex = entry.at(j);
+                if (vertex == iNfaFS) {
+                    vFinalStates.push_back(i);
+                }
+            }
+        }
+
+    }
+
+    std::string GetFinalState() {
+        return Join(vFinalStates, ",");
+    }
+
+    void SetTransition(int vertex_from, int vertex_to, char trans_symbol) {
+        trans oNewTransition;
+        oNewTransition.vertex_from = vertex_from;
+        oNewTransition.vertex_to = vertex_to;
+        oNewTransition.trans_symbol = trans_symbol;
+        transitions.push_back(oNewTransition);
+    }
+
+
+    void Display();
+    bool Match(std::string strText);
+    void GetTransition(int iFrom, char cSymbol, std::vector<trans>& vOutTransition);
+};
 
 #endif

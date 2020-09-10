@@ -1,4 +1,4 @@
-//#include "DFA.h"
+#include "DFA.h"
 //
 ////template<typename T>
 ////DFA<T>::DFA(int iInitialState, bool bIsfinal)
@@ -321,3 +321,46 @@
 //        PrintTransition(oState);
 //    }
 //}
+
+void DFA::Display()
+{
+    trans oNewTransition;
+    std::cout << "\n";
+    for(int i = 0; i < transitions.size(); i++) {
+        oNewTransition = transitions.at(i);
+        std::cout << "q" << oNewTransition.vertex_from <<" {" << Join(m_vEntries.at(oNewTransition.vertex_from), ",")
+            << "} -> q" << oNewTransition.vertex_to <<" {" << Join(m_vEntries.at(oNewTransition.vertex_to), ",")
+            << "} : Symbol - " << oNewTransition.trans_symbol<<std::endl;
+    }
+    std::cout << "\nThe final state is q : " << Join(vFinalStates, ",") << std::endl;
+}
+
+void DFA::GetTransition(int iFrom, char cSymbol, std::vector<trans>& vOutTransition)
+{
+	vOutTransition.clear();
+	std::vector<trans>::iterator iter;
+	for(iter = transitions.begin(); iter != transitions.end(); ++iter) {
+        if (iter->vertex_from == iFrom && iter->trans_symbol == cSymbol)
+        {
+		    vOutTransition.push_back(*iter);
+        }
+	}
+}
+
+// bool DFA::Match(std::string strText)
+// {
+// 	m_strText = strText;
+// 	RegExState *pState = m_vEntries[0];
+// 	std::vector<RegExState*>  Transition;
+// 	for(int i = 0; i < (int)m_strText.size(); ++i) {
+// 		char CurrChar = m_strText[i];		
+// 		pState->GetTransition(CurrChar, Transition);
+// 		if ( Transition.empty())
+// 			return false;
+// 		pState = Transition[0];
+// 		if ( pState->m_bAcceptingState )
+// 			return true;
+		
+// 	}
+// 	return false;
+// }

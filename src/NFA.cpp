@@ -115,12 +115,13 @@
 #include<stack>
 #include <algorithm>
 #include "NFA.h"
+#include "DFA.h"
 
 #define DEBUG 1
 
 using namespace std;
 
-string join(vector<int> v, string delim)
+string Join(vector<int> v, string delim)
 {
     stringstream ss;
     for(int i = 0; i < v.size(); ++i) {
@@ -135,23 +136,23 @@ string join(vector<int> v, string delim)
 NFA concat(NFA a, NFA b)
 {
     NFA result;
-    result.set_vertex(a.get_vertex_count() + b.get_vertex_count());
+    result.SetVertex(a.GetVertexCount() + b.GetVertexCount());
     int i;
-    trans new_trans;
+    trans oNewTransition;
 
     for(i = 0; i < a.transitions.size(); i++) {
-        new_trans = a.transitions.at(i);
-        result.set_transition(new_trans.vertex_from, new_trans.vertex_to, new_trans.trans_symbol);
+        oNewTransition = a.transitions.at(i);
+        result.SetTransition(oNewTransition.vertex_from, oNewTransition.vertex_to, oNewTransition.trans_symbol);
     }
 
-    result.set_transition(a.get_final_state(), a.get_vertex_count(), '^');
+    result.SetTransition(a.GetFinalState(), a.GetVertexCount(), '^');
 
     for(i = 0; i < b.transitions.size(); i++) {
-        new_trans = b.transitions.at(i);
-        result.set_transition(new_trans.vertex_from + a.get_vertex_count(), new_trans.vertex_to + a.get_vertex_count(), new_trans.trans_symbol);
+        oNewTransition = b.transitions.at(i);
+        result.SetTransition(oNewTransition.vertex_from + a.GetVertexCount(), oNewTransition.vertex_to + a.GetVertexCount(), oNewTransition.trans_symbol);
     }
 
-    result.set_final_state(a.get_vertex_count() + b.get_vertex_count() - 1);
+    result.SetFinalState(a.GetVertexCount() + b.GetVertexCount() - 1);
 
     return result;
 }
@@ -161,22 +162,22 @@ NFA kleene(NFA a)
 {
     NFA result;
     int i;
-    trans new_trans;
+    trans oNewTransition;
 
-    result.set_vertex(a.get_vertex_count() + 2);
+    result.SetVertex(a.GetVertexCount() + 2);
 
-    result.set_transition(0, 1, '^');
+    result.SetTransition(0, 1, '^');
 
     for(i = 0; i < a.transitions.size(); i++) {
-        new_trans = a.transitions.at(i);
-        result.set_transition(new_trans.vertex_from + 1, new_trans.vertex_to + 1, new_trans.trans_symbol);
+        oNewTransition = a.transitions.at(i);
+        result.SetTransition(oNewTransition.vertex_from + 1, oNewTransition.vertex_to + 1, oNewTransition.trans_symbol);
     }
 
-    result.set_transition(a.get_vertex_count(), a.get_vertex_count() + 1, '^');
-    result.set_transition(a.get_vertex_count(), 1, '^');
-    result.set_transition(0, a.get_vertex_count() + 1, '^');
+    result.SetTransition(a.GetVertexCount(), a.GetVertexCount() + 1, '^');
+    result.SetTransition(a.GetVertexCount(), 1, '^');
+    result.SetTransition(0, a.GetVertexCount() + 1, '^');
 
-    result.set_final_state(a.get_vertex_count() + 1);
+    result.SetFinalState(a.GetVertexCount() + 1);
 
     return result;
 }
@@ -188,29 +189,29 @@ NFA or_selection(vector<NFA> selections, int no_of_selections)
     int vertex_count = 2;
     int i, j;
     NFA med;
-    trans new_trans;
+    trans oNewTransition;
 
     for(i = 0; i < no_of_selections; i++) {
-        vertex_count += selections.at(i).get_vertex_count();
+        vertex_count += selections.at(i).GetVertexCount();
     }
 
-    result.set_vertex(vertex_count);
+    result.SetVertex(vertex_count);
 
     int adder_track = 1;
 
     for(i = 0; i < no_of_selections; i++) {
-        result.set_transition(0, adder_track, '^');
+        result.SetTransition(0, adder_track, '^');
         med = selections.at(i);
         for(j = 0; j < med.transitions.size(); j++) {
-            new_trans = med.transitions.at(j);
-            result.set_transition(new_trans.vertex_from + adder_track, new_trans.vertex_to + adder_track, new_trans.trans_symbol);
+            oNewTransition = med.transitions.at(j);
+            result.SetTransition(oNewTransition.vertex_from + adder_track, oNewTransition.vertex_to + adder_track, oNewTransition.trans_symbol);
         }
-        adder_track += med.get_vertex_count();
+        adder_track += med.GetVertexCount();
 
-        result.set_transition(adder_track - 1, vertex_count - 1, '^');
+        result.SetTransition(adder_track - 1, vertex_count - 1, '^');
     }
 
-    result.set_final_state(vertex_count - 1);
+    result.SetFinalState(vertex_count - 1);
 
     return result;
 }
@@ -229,9 +230,9 @@ NFA re_to_nfa(string re)
         cur_sym = *it;
         if(cur_sym != '(' && cur_sym != ')' && cur_sym != '*' && cur_sym != '|' && cur_sym != '.') {
             new_sym = new NFA();
-            new_sym->set_vertex(2);
-            new_sym->set_transition(0, 1, cur_sym);
-            new_sym->set_final_state(1);
+            new_sym->SetVertex(2);
+            new_sym->SetTransition(0, 1, cur_sym);
+            new_sym->SetFinalState(1);
             operands.push(*new_sym);
             delete new_sym;
         } else {
@@ -291,35 +292,35 @@ DFA nfa_to_dfa(NFA nfa)
     DFA dfa;
 
     const vector<int> start(1, 0);
-    const vector<int> s0 = nfa.eclosure(start);
+    const vector<int> s0 = nfa.Eclosure(start);
 
-    int vertex_from = dfa.add_entry(s0);
+    int vertex_from = dfa.AddEntry(s0);
 
     while (vertex_from != -1) {
-        const vector<int> T = dfa.entry_at(vertex_from);
-        dfa.mark_entry(vertex_from);
+        const vector<int> T = dfa.EntryAt(vertex_from);
+        dfa.MarkEntry(vertex_from);
 
-        const vector<char> symbols = nfa.find_possible_input_symbols(T);
+        const vector<char> symbols = nfa.FindPossibleInputSymbols(T);
         for (int i = 0; i < symbols.size(); i++) {
             char a = symbols.at(i);
 
-            //TODO: add a eclosure cache : { state => eclosure }
-            const vector<int> U = nfa.eclosure(nfa.move(T, a));
+            //TODO: add a Eclosure cache : { state => Eclosure }
+            const vector<int> U = nfa.Eclosure(nfa.Move(T, a));
 
-            int vertex_to = dfa.find_entry(U);
+            int vertex_to = dfa.FindEntry(U);
             if (vertex_to == -1) { // U not already in S'
-                vertex_to = dfa.add_entry(U);
+                vertex_to = dfa.AddEntry(U);
             }
 
-            dfa.set_transition(vertex_from, vertex_to, a);
+            dfa.SetTransition(vertex_from, vertex_to, a);
         }
 
-        vertex_from = dfa.next_unmarked_entry_idx();
+        vertex_from = dfa.NextUnmarkedEntryIndex();
     }
 
     // The finish states of the DFA are those which contain any
     // of the finish states of the NFA.
-    dfa.set_final_state(nfa.get_final_state());
+    dfa.SetFinalState(nfa.GetFinalState());
 
     return dfa;
 }

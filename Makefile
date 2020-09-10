@@ -18,7 +18,7 @@ OBJ = $(SRC:%.cpp=%.o)
 
 
 CFLAGS += -std=c++17 -W -Wall -Wextra $(if $(DEBUG),-g3) $(if $(DEBUG),-DDEBUG)
-LDFLAGS = -ldl -lcriterion
+LDFLAGS = -ldl
 INC_FLAGS = -Iinclude
 
 TEST_NAME = unit_tests

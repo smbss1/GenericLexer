@@ -14,55 +14,55 @@
 #include "Lexer.h"
 #include "DFA.h"
 #include "NFA.h"
-
-void Regex(DFA& oDfa, const std::string& strId, std::string strValue)
-{
-    // m_oAllDefines.insert(make_pair(strId, strValue));
-    if (!oDfa.StateExist(strId))
-        oDfa.AddState(DFAState(false, strId));
-
-    int iState = oDfa.GetStateID(strId);
-    int nextId;
-    int prevId = 0;
-
-    for (int i = 0; i < strValue.size(); i++) {
-        if (strValue[i] == '[')
-        {
-            while (strValue[i] != ']' && strValue[i])
-            {
-                char first = strValue[i];
-                if (strValue[i + 1] == '-')
-                {
-                    char last = strValue[i + 2];
-                    for (char c = first; c <= last; c++)
-                        oDfa.AddTransition(prevId, c, iState);
-//                    if (bStar) {
-//                        bStar = false;
-//                        for (char c = first; c <= last; c++)
-//                            oDfa.AddTransition(iState, c, iState);
-//                    }
-                    i += 2;
-                }
-                else if (first != '[' && first != ']') {
-                    oDfa.AddTransition(prevId, first, iState);
-                }
-                i++;
-            }
-        }
-        else
-        {
-            if (i > 0 && i < strValue.size() - 1) {
-                nextId = oDfa.AddState(DFAState(false, string(1, strValue[i])));
-            } else if (i < strValue.size()) {
-                nextId = oDfa.AddState(DFAState(false, string(1, strValue[i]), true));
-            } else {
-                nextId = iState;
-            }
-            oDfa.AddTransition(prevId, strValue[i], nextId);
-            prevId = nextId;
-        }
-    }
-}
+//
+//void Regex(DFA& oDfa, const std::string& strId, std::string strValue)
+//{
+//    // m_oAllDefines.insert(make_pair(strId, strValue));
+//    if (!oDfa.StateExist(strId))
+//        oDfa.AddState(DFAState(false, strId));
+//
+//    int iState = oDfa.GetStateID(strId);
+//    int nextId;
+//    int prevId = 0;
+//
+//    for (int i = 0; i < strValue.size(); i++) {
+//        if (strValue[i] == '[')
+//        {
+//            while (strValue[i] != ']' && strValue[i])
+//            {
+//                char first = strValue[i];
+//                if (strValue[i + 1] == '-')
+//                {
+//                    char last = strValue[i + 2];
+//                    for (char c = first; c <= last; c++)
+//                        oDfa.AddTransition(prevId, c, iState);
+////                    if (bStar) {
+////                        bStar = false;
+////                        for (char c = first; c <= last; c++)
+////                            oDfa.AddTransition(iState, c, iState);
+////                    }
+//                    i += 2;
+//                }
+//                else if (first != '[' && first != ']') {
+//                    oDfa.AddTransition(prevId, first, iState);
+//                }
+//                i++;
+//            }
+//        }
+//        else
+//        {
+//            if (i > 0 && i < strValue.size() - 1) {
+//                nextId = oDfa.AddState(DFAState(false, string(1, strValue[i])));
+//            } else if (i < strValue.size()) {
+//                nextId = oDfa.AddState(DFAState(false, string(1, strValue[i]), true));
+//            } else {
+//                nextId = iState;
+//            }
+//            oDfa.AddTransition(prevId, strValue[i], nextId);
+//            prevId = nextId;
+//        }
+//    }
+//}
 //
 //class NFA;
 //
@@ -311,359 +311,333 @@ void Regex(DFA& oDfa, const std::string& strId, std::string strValue)
 //    return exp ;
 //}
 
-NFA character(const std::string& strSymbol)
-{
-    State inState = State();
-    State outState = State();
-    outState.m_bAccept = true;
-
-    inState.AddTransitionForSymbol(strSymbol, outState);
-
-    return NFA(inState, outState);
-}
-
-NFA epsilon(const std::string& strSymbol)
-{
-    return character(EPSILON);
-}
-
-NFA ConcatPair(NFA oFirst, NFA oSecond)
-{
-    oFirst.m_oOutState.m_bAccept = false;
-    oSecond.m_oOutState.m_bAccept = true;
-    oFirst.m_oOutState.AddTransitionForSymbol(EPSILON, oSecond.m_oInState);
-    return NFA(oFirst.m_oInState, oSecond.m_oOutState);
-}
-
-NFA Concat(NFA oFirst, std::vector<NFA> oSecond)
-{
-    for (auto& fragment : oSecond) {
-        oFirst = ConcatPair(oFirst, fragment);
-    }
-    return oFirst;
-}
-
-/**
- * @brief Union: a|b
- * @param oFirst
- * @param oSecond
- * @return
- */
-
-NFA OrPair(NFA oFirst, NFA oSecond)
-{
-    State inState = State();
-    State outState = State();
-
-    inState.AddTransitionForSymbol(EPSILON, oFirst.m_oInState);
-    inState.AddTransitionForSymbol(EPSILON, oSecond.m_oInState);
-    outState.m_bAccept = true;
-    oFirst.m_oOutState.m_bAccept = false;
-    oSecond.m_oOutState.m_bAccept = false;
-
-    oFirst.m_oOutState.AddTransitionForSymbol(EPSILON, outState);
-    oSecond.m_oOutState.AddTransitionForSymbol(EPSILON, outState);
-    return NFA(inState, outState);
-}
-
-NFA OrArray(NFA oFirst, const std::vector<NFA>& oSecond)
-{
-    for (auto& fragment : oSecond) {
-        oFirst = OrPair(oFirst, fragment);
-    }
-    return oFirst;
-}
-
-/**
- * Kleene star/closure.
- *
- * a*
- */
-NFA RepExplicit(NFA oFragment) {
-    State inState = State();
-    State outState = State();
-    outState.m_bAccept = true;
-
-    // 0 or more.
-    inState.AddTransitionForSymbol(EPSILON, oFragment.m_oInState);
-    inState.AddTransitionForSymbol(EPSILON, outState);
-
-    oFragment.m_oOutState.m_bAccept = false;
-    oFragment.m_oOutState.AddTransitionForSymbol(EPSILON, outState);
-    outState.AddTransitionForSymbol(EPSILON, oFragment.m_oInState);
-
-    return NFA(inState, outState);
-}
-
-NFA Rep(NFA oFragment)
-{
-    oFragment.m_oInState.AddTransitionForSymbol(EPSILON, oFragment.m_oOutState);
-    oFragment.m_oOutState.AddTransitionForSymbol(EPSILON, oFragment.m_oInState);
-    return oFragment;
-}
-
-/**
- * Optimized Plus: just adds ε-transitions from
- * the output to the input.
- */
-NFA PlusRep(NFA oFragment) {
-    oFragment.m_oOutState.AddTransitionForSymbol(EPSILON, oFragment.m_oInState);
-    return oFragment;
-}
-
-/**
- * Optimized ? repetition: just adds ε-transitions from
- * the input to the output.
- */
-NFA QuestionRep(NFA oFragment) {
-    oFragment.m_oInState.AddTransitionForSymbol(EPSILON, oFragment.m_oOutState);
-    return oFragment;
-}
-
-NFA FromEpsilon() {
-    State start = State();
-    State end = State();
-    start.AddTransitionForSymbol(EPSILON, end);
-
-    return NFA(start, end);
-}
-
-int priority(char c){
-    switch(c){
-        case '*': return 3;
-        case '.': return 2;
-        case '+': return 1;
-        default: return 0;
-    }
-}
-
-std::string regexp_to_postfix(string regexp)
-{
-    std::string postfix = "";
-    std::stack<char> op;
-    char c;
-    for(unsigned int i = 0; i < regexp.size(); i++)
-    {
-        if (isalpha(regexp[i]))
-        {
-            postfix += regexp[i];
-
-        } else {
-            switch (regexp[i]) {
-                case '(':
-                    op.push(regexp[i]);
-                    break;
-                case ')':
-                    while (op.top() != '(') {
-                        postfix += op.top();
-                        op.pop();
-                    }
-                    op.pop();
-                    break;
-                default:
-                    while (!op.empty()) {
-                        c = op.top();
-                        if (priority(c) >= priority(regexp[i])) {
-                            postfix += op.top();
-                            op.pop();
-                        } else break;
-                    }
-                    op.push(regexp[i]);
-            }
-        }
-        //cout<<regexp[i]<<' '<<postfix<<endl;
-    }
-    while(!op.empty())
-    {
-        postfix += op.top();
-        op.pop();
-    }
-    return postfix;
-}
-
-NFA toNFA(const std::string& postfixExp) {
+//NFA character(const std::string& strSymbol)
+//{
+//    State inState = State(strSymbol);
+//    State outState = State(strSymbol);
+//    outState.m_bAccept = true;
+//
+//    inState.AddTransitionForSymbol(strSymbol, outState);
+//
+//    return NFA(inState, outState);
+//}
+//
+//NFA epsilon()
+//{
+//    return character(EPSILON);
+//}
+//
+//NFA ConcatPair(NFA& oFirst, NFA& oSecond)
+//{
+//    oFirst.m_oOutState.AddTransitionForSymbol(EPSILON, oSecond.m_oInState);
+//
+//    oFirst.m_oOutState.m_bAccept = false;
+//    // oSecond.m_oOutState.m_bAccept = true;
+//
+//    State outState = State();
+//    outState.m_bAccept = true;
+//    oSecond.m_oOutState.m_bAccept = false;
+//
+//    oSecond.m_oOutState.AddTransitionForSymbol(EPSILON, outState);
+//
+//    return NFA(oFirst.m_oInState, outState);
+//}
+//
+//NFA Concat(NFA oFirst, std::vector<NFA> oSecond)
+//{
+//    for (auto& fragment : oSecond) {
+//        oFirst = ConcatPair(oFirst, fragment);
+//    }
+//    return oFirst;
+//}
+//
+///**
+// * @brief Union: a|b
+// * @param oFirst
+// * @param oSecond
+// * @return
+// */
+//
+//NFA OrPair(NFA oFirst, NFA oSecond)
+//{
+//    State inState = State();
+//    State outState = State();
+//
+//    inState.AddTransitionForSymbol(EPSILON, oFirst.m_oInState);
+//    inState.AddTransitionForSymbol(EPSILON, oSecond.m_oInState);
+//    outState.m_bAccept = true;
+//    oFirst.m_oOutState.m_bAccept = false;
+//    oSecond.m_oOutState.m_bAccept = false;
+//
+//    oFirst.m_oOutState.AddTransitionForSymbol(EPSILON, outState);
+//    oSecond.m_oOutState.AddTransitionForSymbol(EPSILON, outState);
+//    return NFA(inState, outState);
+//}
+//
+//NFA OrArray(NFA oFirst, const std::vector<NFA>& oSecond)
+//{
+//    for (auto& fragment : oSecond) {
+//        oFirst = OrPair(oFirst, fragment);
+//    }
+//    return oFirst;
+//}
+//
+///**
+// * Kleene star/closure.
+// *
+// * a*
+// */
+//NFA RepExplicit(NFA oFragment) {
+//    State inState = State();
+//    State outState = State();
+//    outState.m_bAccept = true;
+//
+//    // 0 or more.
+//    inState.AddTransitionForSymbol(EPSILON, oFragment.m_oInState);
+//    inState.AddTransitionForSymbol(EPSILON, outState);
+//
+//    oFragment.m_oOutState.m_bAccept = false;
+//    oFragment.m_oOutState.AddTransitionForSymbol(EPSILON, outState);
+//    outState.AddTransitionForSymbol(EPSILON, oFragment.m_oInState);
+//
+//    return NFA(inState, outState);
+//}
+//
+//NFA Rep(NFA oFragment)
+//{
+//    oFragment.m_oInState.AddTransitionForSymbol(EPSILON, oFragment.m_oOutState);
+//    oFragment.m_oOutState.AddTransitionForSymbol(EPSILON, oFragment.m_oInState);
+//    return oFragment;
+//}
+//
+///**
+// * Optimized Plus: just adds ε-transitions from
+// * the output to the input.
+// */
+//NFA PlusRep(NFA oFragment) {
+//    oFragment.m_oOutState.AddTransitionForSymbol(EPSILON, oFragment.m_oInState);
+//    return oFragment;
+//}
+//
+///**
+// * Optimized ? repetition: just adds ε-transitions from
+// * the input to the output.
+// */
+//NFA QuestionRep(NFA oFragment) {
+//    oFragment.m_oInState.AddTransitionForSymbol(EPSILON, oFragment.m_oOutState);
+//    return oFragment;
+//}
+//
+//NFA FromEpsilon() {
+//    State start = State();
+//    State end = State();
+//    start.AddTransitionForSymbol(EPSILON, end);
+//
+//    return NFA(start, end);
+//}
+//
+//string insert_concat(string regexp){
+//    string ret = "";
+//    char c, c2;
+//    for(unsigned int i = 0; i < regexp.size(); i++){
+//        c = regexp[i];
+//        if(i + 1 < regexp.size()){
+//            c2 = regexp[i + 1];
+//            ret += c;
+//            if(c != '(' && c2 != ')' && c != '+' && c2 != '+' && c2 != '*' && c != '|' && c2 != '|'){
+//                ret += '.';
+//            }
+//        }
+//    }
+//    ret += regexp[regexp.size() - 1];
+//    return ret;
+//}
+//
+//int priority(char c){
+//    switch(c){
+//        case '*': return 3;
+//        case '.': return 2;
+//        case '+': return 1;
+//        default: return 0;
+//    }
+//}
+//
+//std::string regexp_to_postfix(string regexp)
+//{
+//    std::string postfix = "";
+//    std::stack<char> op;
+//    char c;
+//    for(unsigned int i = 0; i < regexp.size(); i++)
+//    {
+//        if (isalpha(regexp[i]))
+//        {
+//            postfix += regexp[i];
+//
+//        } else {
+//            switch (regexp[i]) {
+//                case '(':
+//                    op.push(regexp[i]);
+//                    break;
+//                case ')':
+//                    while (op.top() != '(') {
+//                        postfix += op.top();
+//                        op.pop();
+//                    }
+//                    op.pop();
+//                    break;
+//                default:
+//                    while (!op.empty()) {
+//                        c = op.top();
+//                        if (priority(c) >= priority(regexp[i])) {
+//                            postfix += op.top();
+//                            op.pop();
+//                        } else break;
+//                    }
+//                    op.push(regexp[i]);
+//            }
+//        }
+//        //cout<<regexp[i]<<' '<<postfix<<endl;
+//    }
+//    while(!op.empty())
+//    {
+//        postfix += op.top();
+//        op.pop();
+//    }
+//    return postfix;
+//}
+//
+//NFA toNFA(const std::string& postfixExp) {
 //    if(postfixExp.empty()) {
+//        std::cout << "Empty" << std::endl;
 //        return FromEpsilon();
 //    }
-
-    std::vector<NFA> vStack;
-
-    for (auto& token : postfixExp) {
-        if(token == '*') {
-            auto val = vStack.back();
-            vStack.pop_back();
-            vStack.push_back(Rep(val));
-        } else if (token == '|') {
-            NFA right = vStack.back();
-            vStack.pop_back();
-            NFA left = vStack.back();
-            vStack.pop_back();
-            vStack.push_back(OrPair(left, right));
-        } else if (token == '.') {
-            NFA right = vStack.back();
-            vStack.pop_back();
-            NFA left = vStack.back();
-            vStack.pop_back();
-            vStack.push_back(ConcatPair(left, right));
-        } else {
-            vStack.push_back(character(std::string(1, token)));
-        }
-    }
-    NFA val = vStack.back();
-    vStack.pop_back();
-    return val;
-}
-
-bool isMatch(string text, string pattern) {
-    if (pattern.empty()) return text.empty();
-    bool first_match = (!text.empty() &&
-                        (pattern[0] == text[0] || pattern[0] == '.'));
-
-    if (pattern.size() >= 2 && pattern[1] == '*'){
-        return (isMatch(text, pattern.substr(2)) ||
-                (first_match && isMatch(text.substr(1), pattern)));
-    } else {
-        return first_match && isMatch(text.substr(1), pattern.substr(1));
-    }
-}
+//
+//    std::stack<NFA> vStack;
+//
+//    for (auto& token : postfixExp) {
+//        if(token == '*') {
+//            std::cout << "Rep" << std::endl;
+//            auto val = vStack.top();
+//            vStack.pop();
+//            vStack.push(Rep(val));
+//        } else if (token == '|') {
+//            std::cout << "Or" << std::endl;
+//            NFA right = vStack.top();
+//            vStack.pop();
+//            NFA left = vStack.top();
+//            vStack.pop();
+//            vStack.push(OrPair(left, right));
+//        } else if (token == '.') {
+//            std::cout << "Concat" << std::endl;
+//            NFA right = vStack.top();
+//            vStack.pop();
+//            NFA left = vStack.top();
+//            vStack.pop();
+//            vStack.push(ConcatPair(left, right));
+//        } else {
+//            std::cout << "Character" << std::endl;
+//            vStack.push(character(std::string(1, token)));
+//        }
+//    }
+//    std::cout << vStack.size() << std::endl;
+//    NFA val = vStack.top();
+//    vStack.pop();
+//    return val;
+//}
+//
+//bool isMatch(string text, string pattern) {
+//    if (pattern.empty()) return text.empty();
+//    bool first_match = (!text.empty() &&
+//                        (pattern[0] == text[0] || pattern[0] == '.'));
+//
+//    if (pattern.size() >= 2 && pattern[1] == '*'){
+//        return (isMatch(text, pattern.substr(2)) ||
+//                (first_match && isMatch(text.substr(1), pattern)));
+//    } else {
+//        return first_match && isMatch(text.substr(1), pattern.substr(1));
+//    }
+//}
 
 int main(int argc, char *argv[])
 {
-      // Lexer oLexer;
-//	std::vector<std::string> oSymbols = {
-//		"(", ")", "[", "]",
-//		"{", "}", ";",
-//		"::", "->", ":",
-//		"*", "+", "-",
-//		"/", "<<", ">>", ",","!", ">"
-//	};
-//	lexer.AddSymbols(oSymbols);
-//	lexer.LoadGrammar(
-//	    "terminal:"
-//                   "<Whitespace>:[ ]"
-//                   "<Word>: [a-zA-Z0-9]"
-//                   "<Number>: [0-9]"
-//                   "<Comma>: ','"
-//                   "<RBraces>: '('"
-//                   "<LBraces>: ')'"
-//                   "<Div>: '/'"
-//                   "<Plus>: '+'"
-//                   "<Expression>: <Number> + <Number>");
-//    lexer.AddWhitespace(' ');
-//    lexer.Define("Alpha","abcdefghijklmnopqrstuvwxyz0123456789");
-//    lexer.Define("Integer","0123456789");
-//    lexer.Define("Plus","+");
-//	lexer.Process("19 + 2 + d + 4bdfc484");
-//	helper::Dump(lexer);
+    std::cout<<"\n\nThe Thompson's Construction Algorithm takes a regular expression as an input "
+        <<"and returns its corresponding Non-Deterministic Finite Automaton \n\n";
+    std::cout<<"\n\nThe basic building blocks for constructing the NFA are : \n";
 
-//    DFA<char> dfa(0, false);
-//    dfa.AddState(TokenType::TK_INTEGER, true);
-//    dfa.AddState(TokenType::TK_ID, true);
-//    dfa.AddState(TokenType::TK_OP_PLUS, true);
-//    dfa.AddState(TokenType::TK_WHITESPACE, true);
-//
-//    dfa.AddTransition(0, '+', TokenType::TK_OP_PLUS);
-//
-//    dfa.AddTransition(0, ' ', TokenType::TK_WHITESPACE);
-//    dfa.AddTransition(TokenType::TK_WHITESPACE, ' ', TokenType::TK_WHITESPACE);
-//
-//    for(char c='a'; c<='z'; c++)
-//    {
-//        dfa.AddTransition(0, c, TokenType::TK_ID);
-//        dfa.AddTransition(TokenType::TK_ID, c, TokenType::TK_ID);
-//    }
-//
-//    for(char c='0'; c<='9'; c++)
-//    {
-//        dfa.AddTransition(TokenType::TK_ID, c, TokenType::TK_ID);
-//    }
-//
-//
-//    for(char c = '0'; c <= '9'; c++)
-//    {
-//        dfa.AddTransition(0, c, TokenType::TK_INTEGER);
-//        dfa.AddTransition(TokenType::TK_INTEGER, c, TokenType::TK_INTEGER);
-//    }
-//
-//    std::string inp;
-//    getline(std::cin, inp);
-//
-//    auto tk = lex(dfa, inp);
-//    for(auto i = tk.begin(); i < tk.end(); i++)
-//        std::cout<< i->lexeme << " : " << token_name(i->type) << std::endl;
+    NFA a, b;
 
-//    oLexer.Define("Alpha","[a-z]*[0-9]*");
-//    oLexer.Define("WHITESPACE"," ");
-//    oLexer.Define("Integer","[0-9]*");
-//    oLexer.Define("Plus","+");
-//    oLexer.Process("19 + 2 + d + 4bdfc484");
-//
-//    auto tk = oLexer.oTokenList;
-//    for(auto i = tk.begin(); i < tk.end(); i++)
-//        std::cout<< i->m_strText << ": " << i->m_strType << std::endl;
+    std::cout<<"\nFor the regular expression segment : (a)";
+    a.set_vertex(2);
+    a.set_transition(0, 1, 'a');
+    a.set_final_state(1);
+    a.display();
+    //	getch();
 
-//    DFA dfa;
-//    Regex(dfa, "Action0", "[a-f]");
-//
-//    std::string lexeme;
-//    dfa.Reset();
-//    std::string m_strText = "a";
-//
-//    for(auto itChar = m_strText.begin(); itChar < m_strText.end(); itChar++)
-//    {
-//        //std::cout << dfa.m_iCurrentStateID << std::endl;
-//        lexeme += *itChar;
-//        char next = *(itChar + 1);
-//        dfa.MakeNextTransition(*itChar);
-//        if(dfa.IsAccepting() && !dfa.IsAccepting(next))
-//        {
-//            std::cout << lexeme << std::endl;
-//            lexeme.clear();
-//            dfa.Reset();
-//        }
-//    }
+    std::cout<<"\nFor the regular expression segment : (b)";
+    b.set_vertex(2);
+    b.set_transition(0, 1, 'b');
+    b.set_final_state(1);
+    b.display();
+    //	getch();
 
-//    std::string post = regexp_to_postfix("a*");
-//    std::cout << post << std::endl;
-//    NFA pat = toNFA(post);
-//
-//    std::string strings[] =
-//                 { "aa" , "bar" ,
-//                   "foobar", "farboo", "boofar" , "barfoo" ,
-//                   "foofoobarfooX" ,
-//                   "foofoobarfoo" ,
-//                 };
-//    for (auto& i : pat.m_oInState.m_oTransitionMap) {
-//        std::cout << i.second.size() << std::endl;
-//
-//    }
-//    for (std::string s : strings) {
-//        std::cout << s << "\t:\t" << pat.matches(s) << std::endl;
-//    }
+    std::cout<<"\nFor the regular expression segment [Concatenation] : (a.b)";
+    NFA ab = concat(a, b);
+    ab.display();
+    //	getch();
 
-    DFA dfa;
+    std::cout<<"\nFor the regular expression segment [Kleene Closure] : (a*)";
+    NFA a_star = kleene(a);
+    a_star.display();
+    //	getch();
 
-    dfa.AddState(DFAState(false, "Alpha", true));
-    dfa.AddState(DFAState(false, "Integer", true));
+    std::cout<<"\nFor the regular expression segment [Or] : (a|b)";
+    int no_of_selections;
+    no_of_selections = 2;
+    std::vector<NFA> selections(no_of_selections, NFA());
+    selections.at(0) = a;
+    selections.at(1) = b;
+    NFA a_or_b = or_selection(selections, no_of_selections);
+    a_or_b.display();
+    //	getch();
 
-    for (int i = 32; i < 127; i++) {
-        dfa.AddState(DFAState(false, std::string(1, i)));
-    }
 
-    dfa.PrintStates();
+    string re;
+    std::set<char> symbols;
 
-    for (int i = 32; i < 127; i++) {
-        dfa.AddTransition(0, (char) i, dfa.GetStateID(std::string(1, i)));
-    }
+    std::cout<<"\n*****\t*****\t*****\n";
+    std::cout<<"\nFORMAT : \n"
+        <<"> Explicitly mention concatenation with a '.' operator \n"
+        <<"> Enclose every concatenation and or section by parantheses \n"
+        <<"> Enclose the entire regular expression with parantheses \n\n";
 
-    std::string word = "salut";
+    std::cout<<"For example : \nFor the regular expression (a.(b|c))  -- \n";
+    NFA example_nfa = re_to_nfa("(a.(b|c))");
+    example_nfa.display();
 
-    for (int j = 0; j < word.size(); ++j) {
-        if (j == 0)
-            dfa.AddTransition(j, word[j], dfa.GetStateID(std::string(1, word[j])));
-        else
-        {
-            dfa.AddTransition(dfa.GetStateID(std::string(1, word[j])), word[j], dfa.GetStateID(std::string(1, word[j + 1])));
+    std::cout<<"\n\nEnter the regular expression in the above mentioned format - \n\n";
+    std::cin>>re;
+
+    /*	char cur_sym;
+        int counter = 0;
+        for(string::iterator it = re.begin(); it != re.end(); ++it) {
+        cur_sym = (*it);
+        if(cur_sym != '(' && cur_sym != ')' && cur_sym != '*' && cur_sym != '|' && cur_sym != '.') {
+        cout<<cur_sym<<" "<<counter++<<endl;
+        symbols.insert(cur_sym);
         }
-    }
+        }
+        */
+
+    std::cout<<"\n\nThe required NFA has the transitions : \n\n";
+
+    NFA required_nfa;
+    required_nfa = re_to_nfa(re);
+    required_nfa.display();
+
+    std::cout<<"\n\n==> DFA : \n\n";
+
+    DFA required_dfa = nfa_to_dfa(required_nfa);
+    required_dfa.display();
+
+    return 0;
 }

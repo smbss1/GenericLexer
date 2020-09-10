@@ -106,7 +106,7 @@ public:
     std::map<std::string, Definition> m_oTerminalNames;
     std::map<std::string, std::vector<Definition>> m_oNonTerminalNames;
     // DFA<char> oDfa;
-    DFA oDfa;
+    // DFA oDfa;
 
 private:
     int IsSymbol(int c);

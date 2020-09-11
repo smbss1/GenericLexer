@@ -1,11 +1,11 @@
 #include <iostream>
+#include <utility>
 #include <vector>
 #include <cstring>
 #include <algorithm>
 #include "Lexer.h"
 #include "GrammarParser.h"
-
-using namespace std;
+#include "regex.h"
 
 Lexer::Lexer()
 {
@@ -101,7 +101,7 @@ Token Lexer::ParseSymbol()
             return (Token(TokenType::TokenSymbol, start, len));
         }
     }
-    return (Token(TokenType::TokenUnknown, start, distance(start, m_strCurrent)));
+    return (Token(TokenType::TokenUnknown, start, std::distance(start, m_strCurrent)));
 }
 
 /**
@@ -317,29 +317,31 @@ bool Lexer::Process(const string& strText)
 //        else if (oTokenList.back().IsError())
 //            return false;
 //    }
-//    std::string lexeme;
+    std::string lexeme;
+    std::string lex;
+    RegEx re;
+
 //    oDfa.Reset();
 //    m_strText += '$';
-//    for(auto itChar = m_strText.begin(); itChar < m_strText.end() - 1; itChar++)
-//    {
-//        lexeme += *itChar;
-//        char next = *(itChar + 1);
-//        if(oDfa.MakeNextTransition(*itChar) && !oDfa.MakeNextTransition(next))
-//        {
-//            Token tk;
-//            tk.m_strText = lexeme;
-//            tk.m_strType = oDfa.GetStateName(oDfa.m_iPreviousStateID);
-//            if (tk.m_strType != "WHITESPACE") {
-//                oTokenList.push_back(tk);
-//            }
-//            lexeme.clear();
-//            oDfa.Reset();
-//
-//            if (oTokenList.back().IsError())
-//                return false;
-//        }
-//
-//    }
+    for(auto itChar = m_strText.begin(); itChar < m_strText.end(); itChar++)
+    {
+        lexeme += *itChar;
+        char next = *(itChar + 1);
+        for (auto& define : m_mapDefines) {
+            re.Compile(define.second);
+            if (re.Match(lexeme))
+            {
+                lex = lexeme;
+                lex += next;
+                std::cout << "\"" << lex << "\"" << std::endl;
+                if (!re.Match(lexeme))
+                {
+                    std::cout << "'" << lexeme << "'" << std::endl;
+                    lexeme.clear();
+                }
+            }
+        }
+    }
     return !oTokenList.empty();
 }
 
@@ -410,7 +412,7 @@ void Lexer::AddSymbol(const char* oSymbol)
         m_oSymbols.emplace_back(oSymbol);
 }
 
-void Lexer::AddSymbols(const vector<string>& oSymbols)
+void Lexer::AddSymbols(const std::vector<string>& oSymbols)
 {
     for (const auto& symbol : oSymbols)
         m_oSymbols.push_back(symbol);
@@ -450,75 +452,9 @@ void Lexer::AddNumberRange(const char cStart, const char cEnd)
         AddNumber(i);
 }
 
-void Lexer::Define(std::string strId, std::string strValue)
+void Lexer::Define(std::string strId, std::string strRegex)
 {
-    // m_oAllDefines.insert(make_pair(strId, strValue));
-//    if (!oDfa.StateExist(strId))
-//        oDfa.AddState(DFAState(false, strId));
-//
-//    int iState = oDfa.GetStateID(strId);
-//
-//    int iOpenSquareBracketPos = 0;
-//    bool bStar = false;
-//    for (int i = 0; i < strValue.size(); i++) {
-//        if (strValue[i] == '[')
-//        {
-//            iOpenSquareBracketPos = i;
-//            bool bFirstPosition = i == 0;
-//            while (strValue[i] != ']' && strValue[i])
-//            {
-//                char first = strValue[i];
-//                if (strValue[i + 1] == '-')
-//                {
-//                    char last = strValue[i + 2];
-//                    i += 2;
-//                    if (bFirstPosition && !bStar) {
-//                        for (char c = first; c <= last; c++)
-//                            oDfa.AddTransition(0, c, iState);
-//                    }
-//                    if (bStar) {
-//                        bStar = false;
-//                        for (char c = first; c <= last; c++)
-//                            oDfa.AddTransition(iState, c, iState);
-//                    }
-//                }
-//                else if (first == '.') {
-//                    for (int j = 32; j < 127; j++) {
-//                        if (j != '$')
-//                            oDfa.AddTransition(iState, (char) j, iState);
-//                    }
-//                }
-//                else if (first != '[' && first != ']') {
-//                    if (bFirstPosition)
-//                        oDfa.AddTransition(0, first, iState);
-//                    oDfa.AddTransition(iState, first, iState);
-//                }
-//                i++;
-//            }
-//        }
-//        else if (strValue[i] == '.') {
-//            for (int j = 32; j <= 127; j++) {
-//                oDfa.AddTransition(0, (char) j, iState);
-//                oDfa.AddTransition(iState, (char) j, iState);
-//            }
-//        }
-//        else if (strValue[i] == '*') {
-//            bStar = true;
-//            strValue.erase(strValue.begin() + i);
-//            if (strValue[i - 1] == ']') {
-//                i = iOpenSquareBracketPos - 1;
-//                std::cout << "BStar" << std::endl;
-//                std::cout << strId << std::endl;
-//            }
-//            else
-//                i--;
-//        }
-//        else {
-//            oDfa.AddTransition(0, strValue[i], iState);
-//            if (bStar)
-//                oDfa.AddTransition(iState, strValue[i], iState);
-//        }
-//    }
+    m_mapDefines.insert(std::make_pair(strId, strRegex));
 }
 
 void Lexer::DefineArea(const std::string strId, char cStart, char cEnd)
@@ -552,8 +488,8 @@ bool Lexer::LoadGrammar(const string& strText)
     grammar.GetLexer().AddWhitespace(' ');
     grammar.GetLexer().AddWhitespace('\t');
     grammar.GetLexer().AddWhitespace('\r');
-    grammar.GetLexer().AddArea(make_pair<char, char>('[', ']'));
-    grammar.GetLexer().AddArea(make_pair<char, char>('\'', '\''));
+    grammar.GetLexer().AddArea(std::make_pair<char, char>('[', ']'));
+    grammar.GetLexer().AddArea(std::make_pair<char, char>('\'', '\''));
     grammar.GetLexer().AddIdentiferRange('a', 'z');
     grammar.GetLexer().AddIdentiferRange('A', 'Z');
     grammar.GetLexer().AddIdentiferRange('0', '9');

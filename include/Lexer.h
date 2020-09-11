@@ -6,6 +6,7 @@
 #include <iostream>
 #include "Token.h"
 #include "DFA.h"
+#include "regex.h"
 
 class basic_string;
 
@@ -98,15 +99,13 @@ public:
     const char* strEnd;
     std::vector<std::string> m_oSymbols;
     std::map<std::string, std::string> m_oAllDefines;
+    std::map<std::string, std::string> m_mapDefines;
     std::map<std::string, std::string> m_oAreas;
     std::vector<char> m_oWhitespaces;
     std::vector<char> m_oIdentifierCharacters;
     std::vector<char> m_oNumbers;
-    // std::vector<std::pair<char, char>> m_oAreas;
     std::map<std::string, Definition> m_oTerminalNames;
     std::map<std::string, std::vector<Definition>> m_oNonTerminalNames;
-    // DFA<char> oDfa;
-    // DFA oDfa;
 
 private:
     int IsSymbol(int c);

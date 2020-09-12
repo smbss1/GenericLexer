@@ -11,9 +11,10 @@ int main(int argc, char *argv[])
 {
     Lexer oLexer;
     oLexer.Define("Integer","[0-9]+");
-    oLexer.Define("Alpha","[a-z_]+[0-9]*");
-    oLexer.Define("Whitespace"," ");
-    oLexer.Process("6494abcdab4854 484");
+    oLexer.Define("Identifier","[A-Za-z]+[0-9]*");
+    oLexer.Define("Whitespace","[ \t\n\r\b]+");
+    oLexer.Define("Symbol","[(){};]");
+    oLexer.Process("int myFunction() { return 0; } for (");
 
     helper::Dump(oLexer);
 

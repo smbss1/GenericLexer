@@ -2,225 +2,17 @@
 #include <utility>
 #include <vector>
 #include <cstring>
-#include <algorithm>
 #include "Lexer.h"
-#include "GrammarParser.h"
-#include "reg_exp.h"
+#include "Regex.h"
 
 Lexer::Lexer()
 {
-    // oDfa.AddState(DFAState(true, "sc"));
-//    oDfa.AddState(TokenType::TK_PARAN_OPEN    , true);
-//    oDfa.AddState(TokenType::TK_PARAN_CLOSE   , true);
-//    oDfa.AddState(TokenType::TK_OP_PLUS       , true);
-//    oDfa.AddState(TokenType::TK_OP_TIMES      , true);
-//    oDfa.AddState(TokenType::TK_OP_ASSIGNMENT , true);
-//    oDfa.AddState(TokenType::TK_WHITESPACE    , true);
-//    oDfa.AddState(TokenType::TK_ID            , true);
-//    oDfa.AddState(TokenType::TK_INTEGER       , true);
-//
-//    oDfa.AddTransition(0, '(', TokenType::TK_PARAN_OPEN);
-//    oDfa.AddTransition(0, ')', TokenType::TK_PARAN_CLOSE);
-//    oDfa.AddTransition(0, '+', TokenType::TK_OP_PLUS);
-//    oDfa.AddTransition(0, '*', TokenType::TK_OP_TIMES);
-//    oDfa.AddTransition(0, '=', TokenType::TK_OP_ASSIGNMENT);
-//
-//    oDfa.AddTransition(0, ' ', TokenType::TK_WHITESPACE);
-//    oDfa.AddTransition(TokenType::TK_WHITESPACE, ' ', TokenType::TK_WHITESPACE);
-//
-//    for(char c='a'; c<='z'; c++)
-//    {
-//        oDfa.AddTransition(0, c, TokenType::TK_ID);
-//        oDfa.AddTransition(TokenType::TK_ID, c, TokenType::TK_ID);
-//    }
-//
-//    for(char c='0'; c<='9'; c++)
-//    {
-//        oDfa.AddTransition(TokenType::TK_ID, c, TokenType::TK_ID);
-//    }
-//
-//    for(char c='0'; c<='9'; c++)
-//    {
-//        oDfa.AddTransition(0, c, TokenType::TK_INTEGER);
-//        oDfa.AddTransition(TokenType::TK_INTEGER, c, TokenType::TK_INTEGER);
-//    }
+
 }
+
 Lexer::~Lexer() { }
 
-// Lexer::Lexer(char* strText)
-// {
-// 	m_strBegin = strText;
-// }
-
 // ---------------------------------------------------------------
-
-/**
- * @brief Cette fonction permet de parser un mot alphanumérique
- * Exemple: myVar ou My_var ou my_var1
- * @return un token contenant le mot sous forme de string et le type "tokenAlphaNum"
- */
-Token Lexer::ParseAlpha()
-{
-    const char *start = m_strCurrent;
-    while (std::find(m_oIdentifierCharacters.begin(), m_oIdentifierCharacters.end(), *m_strCurrent) != m_oIdentifierCharacters.end())
-        m_strCurrent++;
-    return (Token(TokenType::TokenAlphaNum, start, m_strCurrent));
-}
-
-/**
- * @brief Cette fonction permet de parser un nombre
- * @return un token contenant le nombre sous forme de string et le type "tokenNumber"
- */
-Token Lexer::ParseNumber()
-{
-    const char *start = m_strCurrent;
-
-    while (std::find(m_oNumbers.begin(), m_oNumbers.end(), *m_strCurrent) != m_oNumbers.end())
-        m_strCurrent++;
-    return (Token(TokenType::TokenNumber, start, m_strCurrent));
-}
-
-/**
- * @brief Cette fonction permet de parser un symbole
- * @return un token contenant le symbol sous forme de string et le type "tokenSymbol"
- * @note voici les symboles actuellement supportés: "(", ")", "[", "]", "{", "}",
- *                                                  ";", "::", "->", ":", "*",
- *                                                  "+", "-", "/", "<<", ">>"
- */
-Token Lexer::ParseSymbol()
-{
-    const char *start = m_strCurrent;
-    
-    for (; *m_strCurrent; m_strCurrent++)
-        if (isalnum(*m_strCurrent))
-            break;
-    for (int k = 0; k < m_oSymbols.size(); ++k) {
-        int len = m_oSymbols[k].size();
-        if (m_oSymbols[k].compare(0, len, start, len) == 0) {
-            m_strCurrent = (char *) start + len;
-            return (Token(TokenType::TokenSymbol, start, len));
-        }
-    }
-    return (Token(TokenType::TokenUnknown, start, std::distance(start, m_strCurrent)));
-}
-
-/**
- * @brief Cette fonction permet de parser une string
- * @return un token contenant la string et le type "tokenString"
- */
-Token Lexer::ParseString()
-{
-    const char *strFirstArea = m_strCurrent;
-    // const char *start = ++m_strCurrent;
-    const char *start = m_strCurrent++;
-//    std::map<std::string, std::string>::const_iterator it;
-//    it = std::find_if(m_oAreas.begin(), m_oAreas.end(), std::bind2nd(IsInA(), *strFirstArea));
-//
-//    while (*m_strCurrent != it->second[1] && *m_strCurrent) {
-//        if (*m_strCurrent == '\\' && m_strCurrent[1])
-//            ++m_strCurrent;
-//        ++m_strCurrent;
-//    }
-//
-//    // Token oToken = Token(TokenType::TokenString, start, m_strCurrent);
-//    if (*m_strCurrent == it->second[1]) {
-//        ++m_strCurrent;
-//    }
-    return (Token(TokenType::TokenString, start, m_strCurrent));
-}
-
-/**
- * @brief Cette fonction permet de vérifier si le caractère est un symbole ou pas
- * @param c C'est le caractère qui sera vérifié
- * @return true si le caractère est un symbole et false dans le cas contraire
- */
-int Lexer::IsSymbol(int c)
-{
-    return (c == '~' || c == '`' || c == '!' ||
-            c == '#' || c == '$' || c == '%' ||
-            c == '^' || c == '&' || c == '*' ||
-            c == '(' || c == ')' || c == '-' ||
-            c == '+' || c == '=' || c == '{' ||
-            c == '}' || c == '[' || c == ']' ||
-            c == ':' || c == ';' || c == '<' ||
-            c == '>' || c == ',' || c == '.' || c == '?' || c == '/');
-}
-
-// ---------------------------------------------------------
-
-auto MapContain(std::map<std::string, std::string>& oMap, char c)
-{
-    for (auto it = oMap.begin(); it != oMap.end(); it++)
-        for (auto& ch : it->second)
-            if (ch == c)
-                return it;
-    return oMap.end();
-}
-
-/**
- * @brief Cette fonction renvoie un token avec son type approprié
- * @return un token avec le type correspondant au mot parsé
- */
-void Lexer::ScanToken()
-{
-    // int line = SkipWhitespace();
-    // Token token;
-
-//    if (IsEnd(m_strCurrent))
-//        return;
-
-//    std::string lexeme;
-//    oDfa.Reset();
-//    m_strCurrent += '$';
-//    for(auto i = m_strText.begin(); i < m_strText.end()-1; i++)
-//    {
-//        lexeme += *i;
-//        // dfa.Input(*i);
-//        char next = *(i + 1);
-//        if(oDfa.MakeNextTransition(*i) && !oDfa.MakeNextTransition(next))
-//        {
-//            Token tk;
-//            tk.m_strText = lexeme;
-//            tk.m_strType = oDfa.GetStateName(oDfa.m_iPreviousStateID);
-//            if (oDfa.GetStateName(oDfa.m_iPreviousStateID) != "WHITESPACE")
-//                oTokenList.push_back(tk);
-//            lexeme.clear();
-//            oDfa.Reset();
-//        }
-//    }
-//    Token eos;
-//    eos.m_strType = "Eof";
-//    oTokenList.push_back(eos);
-
-    // std::vector<std::pair<char, char>>::const_iterator itArea = std::find_if(m_oAreas.begin(), m_oAreas.end(), std::bind2nd(IsInArea(), *m_strCurrent));
-//    auto itDefine = MapContain(m_oAllDefines, *m_strCurrent);
-//    std::cout << itDefine->first << std::endl;
-//    // Si on trouve le bon type
-//    if (itDefine != m_oAllDefines.end())
-//    {
-//        const char *start = m_strCurrent;
-//        // std::vector<std::pair<std::string, std::string>>::const_iterator it = std::find_if(m_oAllDefines.begin(), m_oAllDefines.end(), std::bind2nd(IsInDefine(), *m_strCurrent));
-//        while (itDefine->second.find(*m_strCurrent) != std::string::npos)
-//            m_strCurrent++;
-//        oTokenList.emplace_back(itDefine->first, start, m_strCurrent);
-//    }
-
-//    if (isalpha(*m_strCurrent)) {
-//        oTokenList.push_back(ParseAlpha());
-//    } else if (isdigit(*m_strCurrent)) {
-//        oTokenList.push_back(ParseNumber());
-//    } else {
-//        if (itArea != m_oAreas.end() && *m_strCurrent == itArea->first)
-//            oTokenList.push_back(ParseString());
-//        else if (!isalnum(*m_strCurrent))
-//            oTokenList.push_back(ParseSymbol());
-//        else
-//            oTokenList.emplace_back(TokenType::TokenUnknown);
-//    }
-
-    // token.m_iLinesTraversed = line;
-    // oTokenList.push_back(token);
-}
 
 /**
  * @brief Cette fonction permet de récuperer le token actuel et de passer au suivant
@@ -252,12 +44,6 @@ bool Lexer::TokenMatch(Token oToken, const string& strString)
     return (oToken.GetText() == strString);
 }
 
-bool Lexer::IsWhitespace(char c)
-{
-    // return (c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '/');
-    return std::find(m_oWhitespaces.begin(), m_oWhitespaces.end(), c) != m_oWhitespaces.end();
-}
-
 int Lexer::SkipComment(bool long_comment)
 {
     int line = 0;
@@ -279,27 +65,6 @@ int Lexer::SkipComment(bool long_comment)
     return (line);
 }
 
-int Lexer::SkipWhitespace()
-{
-    int line = 0;
-
-    while (IsWhitespace(*m_strCurrent) && *m_strCurrent) {
-        if (*m_strCurrent == '\n' || *m_strCurrent == '\0')
-            ++line;
-        // if (*m_strCurrent == '/' && *(m_strCurrent + 1) == '/') {
-        //     line += SkipComment(false);
-        //     continue;
-        // }
-
-        // if (*m_strCurrent == '/' && *(m_strCurrent + 1) == '*') {
-        //     line += SkipComment(true);
-        //     continue;
-        // }
-        m_strCurrent++;
-    }
-    return (line);
-}
-
 bool Lexer::Process(const string& strText)
 {
     m_strText    = strText;
@@ -308,30 +73,28 @@ bool Lexer::Process(const string& strText)
     if (strText.empty())
         return false;
 
-//    while (!IsEnd(m_strCurrent))
-//    {
-//        ScanToken();
-//
-//        if (oTokenList.empty())
-//            return true;
-//        else if (oTokenList.back().IsError())
-//            return false;
-//    }
+    Regex re;
+    bool bError;
 
-//    oDfa.Reset();
-//    m_strText += '$';
-    while (!m_strText.empty()) {
-        Regex re;
-        int len = 0;
-        for (auto& define : m_mapDefines) {
+    while (!m_strText.empty() && !bError) {
+        int iLen = 0;
+        const char* pText;
+        bool bFound = false;
+        for (auto& define : m_oAllDefines) {
             re.Compile(define.second.c_str());
-            const char* pText = re.Search(m_strText.c_str(), &len);
-            if (len > 0 && m_strText.find(pText) == 0) {
-                std::cout << m_strText << std::endl;
-                oTokenList.emplace_back(define.first, pText, len);
-                m_strText.erase(0, len);
+            pText = re.Search(m_strText.c_str(), &iLen);
+            if (iLen > 0 && m_strText.find(pText) == 0) {
+                oTokenList.emplace_back(define.first, pText, iLen);
+                m_strText.erase(0, iLen);
+                bFound = true;
                 break;
             }
+        }
+        if (iLen == 1 && !bFound) {
+            std::cout << "'" << m_strText[0] << "'" << " didn't Define." << std::endl;
+            bError = true;
+            oTokenList.clear();
+            break;
         }
     }
 
@@ -393,61 +156,14 @@ bool Lexer::Finished() const
     return (oTokenList.end() == oTokenIterator);
 }
 
-void Lexer::AddSymbol(string& oSymbol)
-{
-    if (!(std::find(m_oSymbols.begin(), m_oSymbols.end(), oSymbol) != m_oSymbols.end()))
-        m_oSymbols.push_back(oSymbol);
-}
-
-void Lexer::AddSymbol(const char* oSymbol)
-{
-    if (!(std::find(m_oSymbols.begin(), m_oSymbols.end(), oSymbol) != m_oSymbols.end()))
-        m_oSymbols.emplace_back(oSymbol);
-}
-
-void Lexer::AddSymbols(const std::vector<string>& oSymbols)
-{
-    for (const auto& symbol : oSymbols)
-        m_oSymbols.push_back(symbol);
-}
-
-void Lexer::AddWhitespace(char cWhitespace)
-{
-    m_oWhitespaces.push_back(cWhitespace);
-}
-
 void Lexer::AddArea(std::pair<char, char> cRange)
 {
     // m_oAreas.emplace_back(cRange);
 }
 
-void Lexer::AddIdentiferCharacter(const char c)
+void Lexer::Define(std::string strId, std::string strRegex, bool bAddInTrash)
 {
-    if (!(std::find(m_oIdentifierCharacters.begin(), m_oIdentifierCharacters.end(), c) != m_oIdentifierCharacters.end()))
-        m_oIdentifierCharacters.emplace_back(c);
-}
-
-void Lexer::AddIdentiferRange(const char cStart, const char cEnd)
-{
-    for (char i = cStart; i <= cEnd; i++)
-        AddIdentiferCharacter(i);
-}
-
-void Lexer::AddNumber(const char c)
-{
-    if (!(std::find(m_oNumbers.begin(), m_oNumbers.end(), c) != m_oNumbers.end()))
-        m_oNumbers.emplace_back(c);
-}
-
-void Lexer::AddNumberRange(const char cStart, const char cEnd)
-{
-    for (char i = cStart; i <= cEnd; i++)
-        AddNumber(i);
-}
-
-void Lexer::Define(std::string strId, std::string strRegex)
-{
-    m_mapDefines.insert(std::make_pair(strId, strRegex));
+    m_oAllDefines.insert(std::make_pair(strId, strRegex));
 }
 
 void Lexer::DefineArea(const std::string strId, char cStart, char cEnd)
@@ -463,69 +179,4 @@ void Lexer::DefineArea(const std::string strId, char cStart, char cEnd)
 //        if (j != cStart && j != cEnd)
 //            oDfa.AddTransition(iState, (char) j, iState);
 //    }
-}
-
-bool Lexer::LoadGrammar(const string& strText)
-{
-    GrammarParser grammar;
-
-    grammar.GetLexer().AddSymbol("<");
-    grammar.GetLexer().AddSymbol(">");
-    grammar.GetLexer().AddSymbol("'");
-    grammar.GetLexer().AddSymbol(":");
-    grammar.GetLexer().AddSymbol("+");
-    grammar.GetLexer().AddSymbol("-");
-    grammar.GetLexer().AddSymbol("*");
-    grammar.GetLexer().AddSymbol(";");
-    grammar.GetLexer().AddWhitespace('\n');
-    grammar.GetLexer().AddWhitespace(' ');
-    grammar.GetLexer().AddWhitespace('\t');
-    grammar.GetLexer().AddWhitespace('\r');
-    grammar.GetLexer().AddArea(std::make_pair<char, char>('[', ']'));
-    grammar.GetLexer().AddArea(std::make_pair<char, char>('\'', '\''));
-    grammar.GetLexer().AddIdentiferRange('a', 'z');
-    grammar.GetLexer().AddIdentiferRange('A', 'Z');
-    grammar.GetLexer().AddIdentiferRange('0', '9');
-    grammar.GetLexer().AddIdentiferCharacter('_');
-
-    if (!grammar.Process(strText))
-        return false;
-
-    m_oTerminalNames = grammar.GetLexer().m_oTerminalNames;
-    m_oNonTerminalNames = grammar.GetLexer().m_oNonTerminalNames;
-
-    string whitespaces = grammar.GetLexer().m_oTerminalNames["Whitespace"].m_strValue;
-    string areaWord = grammar.GetLexer().m_oTerminalNames["Word"].m_strValue;
-    string numbers = grammar.GetLexer().m_oTerminalNames["Number"].m_strValue;
-
-    for (char& whitespace : whitespaces)
-        m_oWhitespaces.emplace_back(whitespace);
-
-    for (int i = 0; i < areaWord.size(); i++)
-    {
-        if (isalnum(areaWord[i]) && areaWord[i + 1] == '-' && isalnum(areaWord[i + 2]))
-        {
-            AddIdentiferRange(areaWord[i], areaWord[i + 2]);
-            i += 2;
-        }
-        else if (areaWord[i])
-            AddIdentiferCharacter(areaWord[i]);
-    }
-
-    for (int i = 0; i < numbers.size(); i++)
-    {
-        if (numbers[i] && numbers[i + 1] == '-' && numbers[i + 2])
-        {
-            AddNumberRange(numbers[i], numbers[i + 2]);
-            i += 2;
-        }
-        else if (numbers[i])
-            AddNumber(numbers[i]);
-    }
-
-    for (auto& itTerminal : grammar.GetLexer().m_oTerminalNames)
-        if (itTerminal.second.m_eType == Definition::TerminalType::Symbol)
-            AddSymbol(itTerminal.second.m_strValue);
-
-    return true;
 }

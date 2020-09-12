@@ -5,8 +5,7 @@
 #include <map>
 #include <iostream>
 #include "Token.h"
-#include "DFA.h"
-#include "regex.h"
+#include "Regex.h"
 
 class basic_string;
 
@@ -30,65 +29,6 @@ struct LessCompare
     }
 };
 
-class Definition
-{
-public:
-    enum class TerminalType
-    {
-        Unknown,
-        Symbol,
-        Statement,
-        Terminal,
-        TerminalRef
-    };
-
-    TerminalType m_eType;
-    std::string m_strValue;
-    std::vector<std::string> m_strValues;
-
-    explicit Definition()
-    {
-        m_eType = TerminalType::Unknown;
-    }
-
-    explicit Definition(TerminalType eType)
-    {
-        m_eType = eType;
-    }
-
-    explicit Definition(TerminalType eType, std::string strValue)
-    {
-        m_eType = eType;
-        m_strValue = strValue;
-    }
-
-//    explicit Definition(TerminalType eType, std::vector<std::string> strValues)
-//    {
-//        m_eType = eType;
-//        m_strValues = strValues;
-//    }
-
-    // virtual bool isEqual(const Definition& obj) const { return obj.m_eType == m_eType; }
-
-
-//    bool operator==(const Definition& obj) {
-//        return obj.m_eType == m_eType;
-//    }
-
-//    void operator==(Definition& oDefinition)
-//    {
-//        m_eType =
-//    }
-};
-
-struct IsInA : std::binary_function<std::pair<std::string, std::string>, char, bool>
-{
-    bool operator()(std::pair<std::string, std::string>& p, char c) const
-    {
-        return p.second[0] == c;
-    }
-};
-
 class Lexer
 {
 public:
@@ -97,25 +37,10 @@ public:
     std::vector<Token>::iterator oStoreTokenIterator;
     Token oEofToken;
     const char* strEnd;
-    std::vector<std::string> m_oSymbols;
     std::map<std::string, std::string> m_oAllDefines;
-    std::map<std::string, std::string> m_mapDefines;
-    std::map<std::string, std::string> m_oAreas;
-    std::vector<char> m_oWhitespaces;
-    std::vector<char> m_oIdentifierCharacters;
-    std::vector<char> m_oNumbers;
-    std::map<std::string, Definition> m_oTerminalNames;
-    std::map<std::string, std::vector<Definition>> m_oNonTerminalNames;
 
 private:
-    int IsSymbol(int c);
-    Token ParseString();
-    Token ParseAlpha();
-    Token ParseNumber();
-    Token ParseSymbol();
-    bool IsWhitespace(char c);
     int SkipComment(bool long_comment);
-    int SkipWhitespace();
 
 public:
     char* m_strFilename;
@@ -129,14 +54,10 @@ public:
     ~Lexer();
     void Begin();
     bool IsEnd(const char* strItr);
-    void ScanToken();
     Token NextToken();
     bool Process(const std::string& strText);
     static bool TokenMatch(Token oToken, const char* string);
     static bool TokenMatch(Token oToken, const std::string& strString);
-    void AddSymbol(std::string& oSymbol);
-    void AddSymbol(const char* oSymbol);
-    void AddSymbols(const std::vector<std::string>& oSymbols);
     void Store();
     void Restore();
     Token& PeekNextToken();
@@ -144,7 +65,6 @@ public:
     std::size_t Size() const;
     void Clear();
     bool Finished() const;
-    bool LoadGrammar(const string& strText);
 
     inline Token& operator[](const std::size_t& lIndex)
     {
@@ -162,19 +82,8 @@ public:
             return oEofToken;
     }
 
-    void AddWhitespace(char cWhitespace);
-
     void AddArea(std::pair<char, char> cRange);
-
-    void AddIdentiferRange(char cStart, char cEnd);
-
-    void AddIdentiferCharacter(char c);
-
-    void AddNumber(char c);
-
-    void AddNumberRange(char cStart, char cEnd);
-    void Define(string strId, string strValue);
-
+    void Define(string strId, string strValue, bool bAddInTrash = false);
     void DefineArea(std::string strId, char cStart, char cEnd);
 
 };

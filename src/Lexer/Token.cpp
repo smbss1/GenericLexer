@@ -1,10 +1,9 @@
 
 #include <iostream>
 #include <utility>
-#include <Token.h>
 
+#include "Token.h"
 #include "Lexer.h"
-#include "Parser.h"
 
 using namespace std;
 

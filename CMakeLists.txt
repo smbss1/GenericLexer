@@ -45,7 +45,6 @@ file(GLOB TEST_SOURCES "./tests/*.cpp")
 file(GLOB HEADERS "./include/*.h")
 
 add_executable(${EXECUTABLE_NAME} ${MAIN} ${SOURCES} ${HEADERS})
-add_executable(main_dfa ${MAIN} "src/DFA.cpp" "include/DFA.h")
 
 # add_library(criterion_lib STATIC IMPORTED)
 #set_target_properties(criterion_lib PROPERTIES IMPORTED_LOCATION

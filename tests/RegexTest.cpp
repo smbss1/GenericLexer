@@ -8,7 +8,7 @@
 
 #include "gtest/gtest.h"
 #include "Lexer.h"
-#include "reg_exp.h"
+#include "Regex.h"
 
 // The fixture for testing class Foo.
 class RegexTest : public ::testing::Test {

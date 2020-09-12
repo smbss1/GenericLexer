@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "Lexer.h"
 #include "GrammarParser.h"
-#include "regex.h"
+#include "reg_exp.h"
 
 Lexer::Lexer()
 {
@@ -317,31 +317,24 @@ bool Lexer::Process(const string& strText)
 //        else if (oTokenList.back().IsError())
 //            return false;
 //    }
-    std::string lexeme;
-    std::string lex;
-    RegEx re;
 
 //    oDfa.Reset();
 //    m_strText += '$';
-    for(auto itChar = m_strText.begin(); itChar < m_strText.end(); itChar++)
-    {
-        lexeme += *itChar;
-        char next = *(itChar + 1);
+    while (!m_strText.empty()) {
+        Regex re;
+        int len = 0;
         for (auto& define : m_mapDefines) {
-            re.Compile(define.second);
-            if (re.Match(lexeme))
-            {
-                lex = lexeme;
-                lex += next;
-                std::cout << "\"" << lex << "\"" << std::endl;
-                if (!re.Match(lexeme))
-                {
-                    std::cout << "'" << lexeme << "'" << std::endl;
-                    lexeme.clear();
-                }
+            re.Compile(define.second.c_str());
+            const char* pText = re.Search(m_strText.c_str(), &len);
+            if (len > 0 && m_strText.find(pText) == 0) {
+                std::cout << m_strText << std::endl;
+                oTokenList.emplace_back(define.first, pText, len);
+                m_strText.erase(0, len);
+                break;
             }
         }
     }
+
     return !oTokenList.empty();
 }
 

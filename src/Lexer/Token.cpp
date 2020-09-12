@@ -36,6 +36,14 @@ Token::Token(TokenType type, const char* beg, const char* end)
     // m_strvText = string_view(m_strText);
 }
 
+Token::Token(std::string type, const char* beg, size_t len)
+{
+    m_strType = type;
+    m_iLength = len;
+    m_strText = string(beg, m_iLength);
+    // m_strvText = string_view(m_strText);
+}
+
 Token::Token(std::string type, const char *beg, const char *end)
 {
     m_strType = std::move(type);

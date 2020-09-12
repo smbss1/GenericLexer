@@ -1,0 +1,8 @@
+
+// language = "cpp"
+
+enum TOKEN_TYPE
+{
+    Identifier,
+    Number,
+};

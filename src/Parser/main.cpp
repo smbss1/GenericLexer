@@ -237,7 +237,6 @@
 //
 //int main()
 //{
-//    std::string filename = "../unger.dat";
 //    std::ifstream ifs(filename);
 //    if (ifs) {
 //        MB::Grammar grammar(ifs);

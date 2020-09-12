@@ -35,6 +35,7 @@ public:
     Token(TokenType type);
     Token(TokenType type, const char* beg, std::size_t len);
     Token(TokenType type, const char* beg, const char* end);
+    Token(std::string type, const char* beg, std::size_t len);
     Token(std::string type, const char* beg, const char* end);
     ~Token();
 

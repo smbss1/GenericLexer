@@ -1,6 +1,6 @@
 
 #include <iostream>
-#include "Code Generator/Enode.h"
+#include "Enode.h"
 
 using namespace std;
 

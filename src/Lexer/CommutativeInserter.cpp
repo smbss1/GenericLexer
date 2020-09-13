@@ -15,12 +15,12 @@ void CommutativeInserter::IgnoreSymbol(const std::string& strSymbol)
 
 int CommutativeInserter::Insert(const Token& oT0, const Token& oT1, Token& oNewToken)
 {
-    oNewToken.m_eType     = TokenType::TokenSymbol;
+    oNewToken.m_strType     = "Symbol";
     oNewToken.m_strText    = "*";
     oNewToken.m_iLength = oT1.m_iLength;
     bool match         = false;
 
-    if (oT0.m_eType == TokenType::TokenSymbol)
+    if (oT0.m_strType == "Symbol")
     {
         if (oIgnoreSet.find(oT0.m_strText) != oIgnoreSet.end())
         {
@@ -32,7 +32,7 @@ int CommutativeInserter::Insert(const Token& oT0, const Token& oT1, Token& oNewT
         }
     }
 
-    if (oT1.m_eType == TokenType::TokenSymbol)
+    if (oT1.m_strType == "Symbol")
     {
         if (oIgnoreSet.find(oT1.m_strText) != oIgnoreSet.end())
         {
@@ -40,17 +40,17 @@ int CommutativeInserter::Insert(const Token& oT0, const Token& oT1, Token& oNewT
         }
     }
 
-    if ((oT0.m_eType == TokenType::TokenNumber     ) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
-    else if ((oT0.m_eType == TokenType::TokenNumber     ) && (helper::TokenIs(oT0, TokenType::TokenSymbol, "("))) match = true;
-    else if ((oT0.m_eType == TokenType::TokenNumber     ) && (helper::TokenIs(oT0, TokenType::TokenSymbol, "{"))) match = true;
-    else if ((oT0.m_eType == TokenType::TokenNumber     ) && (helper::TokenIs(oT0, TokenType::TokenSymbol, "["))) match = true;
-    else if ((oT0.m_eType == TokenType::TokenAlphaNum     ) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
-    else if ((helper::TokenIs(oT0, TokenType::TokenSymbol, ")")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
-    else if ((helper::TokenIs(oT0, TokenType::TokenSymbol, "}")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
-    else if ((helper::TokenIs(oT0, TokenType::TokenSymbol, "]")) && (oT1.m_eType == TokenType::TokenNumber     )) match = true;
-    else if ((helper::TokenIs(oT0, TokenType::TokenSymbol, ")")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
-    else if ((helper::TokenIs(oT0, TokenType::TokenSymbol, "}")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
-    else if ((helper::TokenIs(oT0, TokenType::TokenSymbol, "]")) && (oT1.m_eType == TokenType::TokenAlphaNum     )) match = true;
+    if ((oT0.m_strType == "Number"     ) && (oT1.m_strType == "Identifier"     )) match = true;
+    else if ((oT0.m_strType == "Number"    ) && (helper::TokenIs(oT0, "Symbol", "("))) match = true;
+    else if ((oT0.m_strType == "Number"     ) && (helper::TokenIs(oT0, "Symbol", "{"))) match = true;
+    else if ((oT0.m_strType == "Number"     ) && (helper::TokenIs(oT0, "Symbol", "["))) match = true;
+    else if ((oT0.m_strType == "Identifier"     ) && (oT1.m_strType == "Number"     )) match = true;
+    else if ((helper::TokenIs(oT0, "Symbol", ")")) && (oT1.m_strType == "Number"     )) match = true;
+    else if ((helper::TokenIs(oT0, "Symbol", "}")) && (oT1.m_strType == "Number"     )) match = true;
+    else if ((helper::TokenIs(oT0, "Symbol", "]")) && (oT1.m_strType == "Number"     )) match = true;
+    else if ((helper::TokenIs(oT0, "Symbol", ")")) && (oT1.m_strType == "Identifier"     )) match = true;
+    else if ((helper::TokenIs(oT0, "Symbol", "}")) && (oT1.m_strType == "Identifier"     )) match = true;
+    else if ((helper::TokenIs(oT0, "Symbol", "]")) && (oT1.m_strType == "Identifier"     )) match = true;
 
     return (match) ? 1 : -1;
 }

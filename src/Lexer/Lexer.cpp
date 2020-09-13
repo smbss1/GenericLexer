@@ -2,12 +2,16 @@
 #include <utility>
 #include <vector>
 #include <cstring>
+#include <algorithm>
 #include "Lexer.h"
 #include "Regex.h"
 
 Lexer::Lexer()
 {
-
+    m_iLines = 0;
+    m_iError = 0;
+    m_strFilename = nullptr;
+    m_strCurrent = nullptr;
 }
 
 Lexer::~Lexer() { }
@@ -74,19 +78,30 @@ bool Lexer::Process(const string& strText)
         return false;
 
     Regex re;
-    bool bError;
+    bool bError = false;
+    m_iLines = 1;
 
-    while (!m_strText.empty() && !bError) {
+    while (!m_strText.empty() && bError != true) {
         int iLen = 0;
         const char* pText;
         bool bFound = false;
+        std::vector<std::string>::iterator itTrash;
+
         for (auto& define : m_oAllDefines) {
             re.Compile(define.second.c_str());
             pText = re.Search(m_strText.c_str(), &iLen);
             if (iLen > 0 && m_strText.find(pText) == 0) {
-                oTokenList.emplace_back(define.first, pText, iLen);
+                itTrash = std::find(m_oTrashDefines.begin(), m_oTrashDefines.end(), define.first);
+                if (itTrash == m_oTrashDefines.end())
+                    oTokenList.emplace_back(define.first, pText, iLen, m_iLines);
                 m_strText.erase(0, iLen);
                 bFound = true;
+
+                // std::cout << define.first << " - " << m_iLines << std::endl;
+
+                if (define.first == "New Line")
+                    m_iLines++;
+
                 break;
             }
         }
@@ -97,7 +112,7 @@ bool Lexer::Process(const string& strText)
             break;
         }
     }
-
+    m_iLines++;
     return !oTokenList.empty();
 }
 
@@ -161,9 +176,12 @@ void Lexer::AddArea(std::pair<char, char> cRange)
     // m_oAreas.emplace_back(cRange);
 }
 
-void Lexer::Define(std::string strId, std::string strRegex, bool bAddInTrash)
+void Lexer::Define(const std::string& strId, const std::string& strRegex, bool bAddInTrash)
 {
     m_oAllDefines.insert(std::make_pair(strId, strRegex));
+
+    if (bAddInTrash)
+        m_oTrashDefines.push_back(strId);
 }
 
 void Lexer::DefineArea(const std::string strId, char cStart, char cEnd)

@@ -38,6 +38,7 @@ public:
     Token oEofToken;
     const char* strEnd;
     std::map<std::string, std::string> m_oAllDefines;
+    std::vector<std::string> m_oTrashDefines;
 
 private:
     int SkipComment(bool long_comment);
@@ -83,7 +84,7 @@ public:
     }
 
     void AddArea(std::pair<char, char> cRange);
-    void Define(string strId, string strValue, bool bAddInTrash = false);
+    void Define(const string& strId, const string& strValue, bool bAddInTrash = false);
     void DefineArea(std::string strId, char cStart, char cEnd);
 
 };
@@ -110,9 +111,9 @@ namespace helper
         }
     }
 
-    inline bool TokenIs(Token oToken, const TokenType eType, const char* strValue)
+    inline bool TokenIs(Token oToken, const std::string& eType, const char* strValue)
     {
-        return oToken.IsType(eType) && Lexer::TokenMatch(oToken, strValue);
+        return oToken.m_strType == eType && Lexer::TokenMatch(oToken, strValue);
     }
 
     // class OperatorJoiner : public TokenJoiner

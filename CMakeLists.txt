@@ -10,11 +10,11 @@ set(CMAKE_CXX_STANDARD 17)
 #set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Executable Name
-set(EXECUTABLE_NAME main)
+set(EXECUTABLE_NAME main_example)
 set(TEST_EXECUTABLE_NAME unit_test)
 
 set(INCLUDE ./include)
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/example)
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 # set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
@@ -35,16 +35,13 @@ include_directories(${INCLUDE})
 # set ( PROJECT_LINK_LIBS libtestStudent.a )
 # link_directories( ~/exploringBB/extras/cmake/studentlib_static/build )
 
-#Can manually add the sources using the set command as follows:
-# set(SOURCES src/mainapp.cpp src/Student.cpp)
-
 #However, the file(GLOB...) allows for wildcard additions:
-set(MAIN "main.cpp")
+set(MAIN "Example/main.cpp")
 file(GLOB SOURCES "./src/Lexer/*.cpp" "./src/Parser/*.cpp" "./src/*.cpp")
 file(GLOB TEST_SOURCES "./tests/*.cpp")
 file(GLOB HEADERS "./include/*.h")
 
-add_executable(${EXECUTABLE_NAME} ${MAIN} ${SOURCES} ${HEADERS})
+add_library(tokenizer STATIC ${SOURCES} ${HEADERS})
 
 # add_library(criterion_lib STATIC IMPORTED)
 #set_target_properties(criterion_lib PROPERTIES IMPORTED_LOCATION
@@ -55,10 +52,6 @@ add_executable(${EXECUTABLE_NAME} ${MAIN} ${SOURCES} ${HEADERS})
 # file(GLOB CRITERION_HEADERS "criterion/*.h")
 # include_directories(CRITERION_HEADERS)
 
-# add_executable(The_project ${TEST_SOURCES})
-# target_link_libraries(app ${CRITERION_LIBRARY})
-add_subdirectory(GoogleTest)
-
 add_executable(${TEST_EXECUTABLE_NAME} ${TEST_SOURCES} ${SOURCES} ${HEADERS})
 target_link_libraries(${TEST_EXECUTABLE_NAME} gtest gtest_main)
 
@@ -68,5 +61,3 @@ target_link_libraries(define_test gtest gtest_main)
 #target_compile_features(${TEST_EXECUTABLE_NAME} PUBLIC cxx_std_17)
 # target_link_libraries(l${EXECUTABLE_NAME} ${PROJECT_LINK_LIBS} )
 # add_executable(${EXECUTABLE_NAME} ${SOURCES})
-
-# add_executable(evalexpr EvalExpr.cpp)

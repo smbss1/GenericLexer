@@ -4,12 +4,10 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <string>
 #include "Token.h"
 #include "Regex.h"
 
-class basic_string;
-
-typedef std::basic_string<char>    string;
 
 struct LessCompare
 {
@@ -37,7 +35,8 @@ public:
     std::vector<Token>::iterator oStoreTokenIterator;
     Token oEofToken;
     const char* strEnd;
-    std::map<std::string, std::string> m_oAllDefines;
+    std::vector<std::pair<StringID, std::string>> m_oAllDefines;
+    std::vector<StringID> m_oTrashDefines;
 
 private:
     int SkipComment(bool long_comment);
@@ -83,7 +82,8 @@ public:
     }
 
     void AddArea(std::pair<char, char> cRange);
-    void Define(string strId, string strValue, bool bAddInTrash = false);
+    void Define(const std::string& strId, const std::string& strValue, bool bAddInTrash = false);
+	void Define(const int id, const std::string& strRegex, bool bAddInTrash = false);
     void DefineArea(std::string strId, char cStart, char cEnd);
 
 };
@@ -106,13 +106,13 @@ namespace helper
         for (std::size_t i = 0; i < oLexer.Size(); ++i)
         {
             Token oToken = oLexer[i];
-            std::cout << "Token[" << i << "] " << oToken.m_strType << " --> '" << oToken.GetText() << "'" << std::endl;
+            std::cout << "Token[" << i << "] " << oToken.m_oType << " --> '" << oToken.GetText() << "'" << std::endl;
         }
     }
 
-    inline bool TokenIs(Token oToken, const TokenType eType, const char* strValue)
+    inline bool TokenIs(Token oToken, const std::string& eType, const char* strValue)
     {
-        return oToken.IsType(eType) && Lexer::TokenMatch(oToken, strValue);
+        return oToken.m_oType == eType && Lexer::TokenMatch(oToken, strValue);
     }
 
     // class OperatorJoiner : public TokenJoiner

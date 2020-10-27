@@ -4,12 +4,10 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <string>
+#include <iterator>
 #include "Token.h"
-#include "Regex.h"
 
-class basic_string;
-
-typedef std::basic_string<char>    string;
 
 struct LessCompare
 {
@@ -29,6 +27,23 @@ struct LessCompare
     }
 };
 
+struct Area
+{
+	explicit Area()
+	{
+		m_cStart = 0;
+		m_cEnd = 0;
+	}
+
+	explicit Area(char start, char end)
+	{
+		m_cStart = start;
+		m_cEnd = end;
+	}
+	char m_cStart;
+	char m_cEnd;
+};
+
 class Lexer
 {
 public:
@@ -37,8 +52,9 @@ public:
     std::vector<Token>::iterator oStoreTokenIterator;
     Token oEofToken;
     const char* strEnd;
-    std::map<std::string, std::string> m_oAllDefines;
-    std::vector<std::string> m_oTrashDefines;
+    std::vector<std::pair<StringID, std::string>> m_oAllDefines;
+    std::vector<std::pair<StringID, Area>> m_oAreaDefines;
+    std::vector<StringID> m_oTrashDefines;
 
 private:
     int SkipComment(bool long_comment);
@@ -84,8 +100,10 @@ public:
     }
 
     void AddArea(std::pair<char, char> cRange);
-    void Define(const string& strId, const string& strValue, bool bAddInTrash = false);
-    void DefineArea(std::string strId, char cStart, char cEnd);
+    void Define(const std::string& strId, const std::string& strValue, bool bAddInTrash = false);
+	void Define(const int id, const std::string& strRegex, bool bAddInTrash = false);
+    void DefineArea(const std::string& strId, char cStart, char cEnd);
+    void DefineArea(const int id, char cStart, char cEnd);
 
 };
 
@@ -107,13 +125,13 @@ namespace helper
         for (std::size_t i = 0; i < oLexer.Size(); ++i)
         {
             Token oToken = oLexer[i];
-            std::cout << "Token[" << i << "] " << oToken.m_strType << " --> '" << oToken.GetText() << "'" << std::endl;
+            std::cout << "Token[" << i << "] " << oToken.m_oType << " --> '" << oToken.GetText() << "'" << std::endl;
         }
     }
 
     inline bool TokenIs(Token oToken, const std::string& eType, const char* strValue)
     {
-        return oToken.m_strType == eType && Lexer::TokenMatch(oToken, strValue);
+        return oToken.m_oType == eType && Lexer::TokenMatch(oToken, strValue);
     }
 
     // class OperatorJoiner : public TokenJoiner

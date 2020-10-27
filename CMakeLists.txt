@@ -21,19 +21,6 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 #Bring the headers, such as Student.h into the project
 include_directories(${INCLUDE})
 
-#Generate the shared library from the sources
-# add_library(testStudent SHARED ${SOURCES})
-
-#Generate the static library from the sources
-# add_library(testStudent STATIC ${SOURCES})
-
-#For the shared library:
-# set ( PROJECT_LINK_LIBS libtestStudent.so )
-# link_directories( ~/exploringBB/extras/cmake/studentlib_shared/build )
-
-#For the static library:
-# set ( PROJECT_LINK_LIBS libtestStudent.a )
-# link_directories( ~/exploringBB/extras/cmake/studentlib_static/build )
 
 #However, the file(GLOB...) allows for wildcard additions:
 set(MAIN "Example/main.cpp")
@@ -41,23 +28,11 @@ file(GLOB SOURCES "./src/Lexer/*.cpp" "./src/Parser/*.cpp" "./src/*.cpp")
 file(GLOB TEST_SOURCES "./tests/*.cpp")
 file(GLOB HEADERS "./include/*.h")
 
-add_library(tokenizer STATIC ${SOURCES} ${HEADERS})
+add_library(GenericLexer STATIC ${SOURCES} ${HEADERS})
 
-# add_library(criterion_lib STATIC IMPORTED)
-#set_target_properties(criterion_lib PROPERTIES IMPORTED_LOCATION
-# "/usr/lib/x86_64-linux-gnu/my_logical_ext_lib.so")
-
-# find_package(Criterion REQUIRED)
-# include_directories(${CRITERION_INCLUDE_DIR})
-# file(GLOB CRITERION_HEADERS "criterion/*.h")
-# include_directories(CRITERION_HEADERS)
 
 add_executable(${TEST_EXECUTABLE_NAME} ${TEST_SOURCES} ${SOURCES} ${HEADERS})
 target_link_libraries(${TEST_EXECUTABLE_NAME} gtest gtest_main)
 
 add_executable(define_test "tests/TestDefine.cpp" ${SOURCES} ${HEADERS})
 target_link_libraries(define_test gtest gtest_main)
-# target_link_libraries(${TEST_EXECUTABLE_NAME} criterion)
-#target_compile_features(${TEST_EXECUTABLE_NAME} PUBLIC cxx_std_17)
-# target_link_libraries(l${EXECUTABLE_NAME} ${PROJECT_LINK_LIBS} )
-# add_executable(${EXECUTABLE_NAME} ${SOURCES})

@@ -4,7 +4,7 @@
 #include <cstring>
 #include <algorithm>
 #include "Lexer.h"
-#include "Regex.h"
+#include "re.h"
 
 Lexer::Lexer()
 {
@@ -43,7 +43,7 @@ bool Lexer::TokenMatch(Token oToken, const char* string)
     return (!strncmp(oToken.GetCString(), string, oToken.m_iLength) && string[oToken.m_iLength] == 0);
 }
 
-bool Lexer::TokenMatch(Token oToken, const string& strString)
+bool Lexer::TokenMatch(Token oToken, const std::string& strString)
 {
     return (oToken.GetText() == strString);
 }
@@ -69,7 +69,7 @@ int Lexer::SkipComment(bool long_comment)
     return (line);
 }
 
-bool Lexer::Process(const string& strText)
+bool Lexer::Process(const std::string& strText)
 {
     m_strText    = strText;
     oTokenList.clear();
@@ -77,39 +77,75 @@ bool Lexer::Process(const string& strText)
     if (strText.empty())
         return false;
 
-    Regex re;
     bool bError = false;
     m_iLines = 1;
 
-    while (!m_strText.empty() && bError != true) {
-        int iLen = 0;
-        const char* pText;
-        bool bFound = false;
-        std::vector<std::string>::iterator itTrash;
+    int iLen = 0;
+    std::string pText;
+    bool bFound = false;
+    std::vector<StringID>::iterator itTrash;
+    int maxLen = 0;
+    std::pair<StringID, std::string> defineTarget;
 
-        for (auto& define : m_oAllDefines) {
-            re.Compile(define.second.c_str());
-            pText = re.Search(m_strText.c_str(), &iLen);
-            if (iLen > 0 && m_strText.find(pText) == 0) {
-                itTrash = std::find(m_oTrashDefines.begin(), m_oTrashDefines.end(), define.first);
-                if (itTrash == m_oTrashDefines.end())
-                    oTokenList.emplace_back(define.first, pText, iLen, m_iLines);
-                m_strText.erase(0, iLen);
-                bFound = true;
+    while (!m_strText.empty())
+    {
+        bFound = false;
+        maxLen = 0;
+        iLen = 0;
 
+        for (auto& define : m_oAreaDefines)
+		{
+			if (define.second.m_cStart == m_strText[0])
+			{
+				char* current = (char *) m_strText.c_str();
+				const char* start = current;
+				const char* startContent = ++current;
+				while(current && *current != define.second.m_cEnd)
+					current++;
+				oTokenList.emplace_back(define.first, startContent, current, m_iLines);
+				if (*current == define.second.m_cEnd)
+					current++;
+				m_strText.erase(0, std::distance((char*)start, current));
+				break;
+			}
+		}
+
+        for (auto& define : m_oAllDefines)
+        {
+            // const char* pStart = nullptr;
+            // re.Compile(define.second.c_str());
+            // re_compile(define.second.c_str());
+            int index = re_match(define.second.c_str(), m_strText.c_str(), &iLen);
+            // pStart = re.Search(m_strText.c_str(), &iLen);
+            // std::cout << define.second.c_str() << std::endl;
+
+            if (index == 0)
+            {
+                if (maxLen < iLen)
+                {
+                    defineTarget = define;
+                    maxLen = iLen;
+                    pText = m_strText.substr(index, maxLen);
+                }
                 // std::cout << define.first << " - " << m_iLines << std::endl;
-
-                if (define.first == "New Line")
-                    m_iLines++;
-
-                break;
             }
         }
+
+        if (maxLen > 0)
+        {
+            itTrash = std::find(m_oTrashDefines.begin(), m_oTrashDefines.end(), defineTarget.first);
+            if (itTrash == m_oTrashDefines.end())
+                oTokenList.emplace_back(defineTarget.first, pText, maxLen, m_iLines);
+            m_strText.erase(0, maxLen);
+            bFound = true;
+
+            if (defineTarget.first == 83)
+                m_iLines++;
+        }
+
         if (iLen == 1 && !bFound) {
-            std::cout << "'" << m_strText[0] << "'" << " didn't Define." << std::endl;
-            bError = true;
-            oTokenList.clear();
-            break;
+            oTokenList.emplace_back(StringID(84), "Unexpected Character.", (std::size_t) 21, (std::size_t) m_iLines);
+            m_strText.erase(0, 1);
         }
     }
     m_iLines++;
@@ -176,25 +212,38 @@ void Lexer::AddArea(std::pair<char, char> cRange)
     // m_oAreas.emplace_back(cRange);
 }
 
+// enum class Format {
+//     TEXT = 0,
+//     PDF = 1000,
+//     OTHER = 2000,
+// };
+// Format f = Format::PDF;
+// int a = f;                         // error
+// int b = static_cast<int>(f);
+
 void Lexer::Define(const std::string& strId, const std::string& strRegex, bool bAddInTrash)
 {
-    m_oAllDefines.insert(std::make_pair(strId, strRegex));
+    m_oAllDefines.push_back(std::make_pair(StringID(strId), strRegex));
 
     if (bAddInTrash)
-        m_oTrashDefines.push_back(strId);
+        m_oTrashDefines.push_back(StringID(strId));
 }
 
-void Lexer::DefineArea(const std::string strId, char cStart, char cEnd)
+void Lexer::Define(const int id, const std::string& strRegex, bool bAddInTrash)
 {
-//    // m_oAreas.insert(make_pair(strId, std::string(cStart, cEnd)));
-//    if (!oDfa.StateExist(strId))
-//        oDfa.AddState(DFAState(false, strId));
-//    int iState = oDfa.GetStateID(strId);
-//    oDfa.AddTransition(0, cStart, iState);
-//    oDfa.AddTransition(iState, cStart, iState);
-//    oDfa.AddTransition(iState, cEnd, iState);
-//    for (int j = 32; j <= 127; j++) {
-//        if (j != cStart && j != cEnd)
-//            oDfa.AddTransition(iState, (char) j, iState);
-//    }
+    m_oAllDefines.push_back(std::make_pair(StringID(id), strRegex));
+
+    if (bAddInTrash)
+        m_oTrashDefines.push_back(StringID(id));
+}
+
+void Lexer::DefineArea(const std::string& strId, char cStart, char cEnd)
+{
+   m_oAreaDefines.push_back(std::make_pair(StringID(strId), Area(cStart, cEnd)));
+}
+
+
+void Lexer::DefineArea(const int id, char cStart, char cEnd)
+{
+   m_oAreaDefines.push_back(std::make_pair(StringID(id), Area(cStart, cEnd)));
 }

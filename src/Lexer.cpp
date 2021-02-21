@@ -106,10 +106,7 @@ bool Lexer::Process(const std::string& strText)
 						newStr += m_strText[i];
 				}
 				oTokenList.emplace_back(define.first, newStr, newStr.size(), m_iLines);
-<<<<<<< HEAD
                 m_strList.emplace_back(newStr);
-=======
->>>>>>> 1cce8afe35c79e32e1fbb85b734c374e1a7c5d7d
 				m_strText.erase(0, i + 1);
 				break;
 			}
@@ -117,15 +114,9 @@ bool Lexer::Process(const std::string& strText)
 
         for (auto& define : m_oAllDefines)
         {
-<<<<<<< HEAD
             std::smatch match;
             std::regex reg(define.second);
             if (std::regex_search(m_strText, match, reg))
-=======
-            int index = re_match(define.second.c_str(), m_strText.c_str(), &iLen);
-
-            if (index == 0)
->>>>>>> 1cce8afe35c79e32e1fbb85b734c374e1a7c5d7d
             {
                 int index = match.position();
                 iLen = match.length();
@@ -174,10 +165,7 @@ bool Lexer::Process(const std::string& strText)
 						newStr += m_strText[i];
 				}
                 oTokenList.emplace_back(defineTarget.first, newStr, i, m_iLines);
-<<<<<<< HEAD
                 m_strList.emplace_back(newStr);
-=======
->>>>>>> 1cce8afe35c79e32e1fbb85b734c374e1a7c5d7d
 			}
             m_strText.erase(0, maxLen);
             bFound = true;
@@ -255,18 +243,6 @@ bool Lexer::Finished() const
     return (oTokenList.end() == oTokenIterator);
 }
 
-<<<<<<< HEAD
-=======
-// enum class Format {
-//     TEXT = 0,
-//     PDF = 1000,
-//     OTHER = 2000,
-// };
-// Format f = Format::PDF;
-// int a = f;                         // error
-// int b = static_cast<int>(f);
-
->>>>>>> 1cce8afe35c79e32e1fbb85b734c374e1a7c5d7d
 void Lexer::Define(const std::string& strId, const std::string& strRegex, bool bAddInTrash)
 {
     m_oAllDefines.push_back(std::make_pair(StringID(strId), strRegex));

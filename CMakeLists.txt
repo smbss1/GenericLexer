@@ -13,3 +13,5 @@ file(GLOB_RECURSE SRCS "src/*.cpp")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(lexer STATIC ${SRCS})
+
+target_include_directories(lexer PUBLIC "include")

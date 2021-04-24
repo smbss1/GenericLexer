@@ -4,6 +4,8 @@
 #include <cstring>
 #include <algorithm>
 #include <regex>
+#include <future>
+#include <functional>
 #include "Lexer.h"
 
 Lexer::Lexer()
@@ -22,7 +24,7 @@ Lexer::~Lexer() { }
  * @brief Cette fonction permet de récuperer le token actuel et de passer au suivant
  * @return un token avec le type correspondant au mot parsé
  */
-Token Lexer::NextToken()
+Token Lexer::next_token()
 {
     if (oTokenList.end() != oTokenIterator)
     {
@@ -48,7 +50,26 @@ bool Lexer::TokenMatch(Token oToken, const std::string& strString)
     return (oToken.GetText() == strString);
 }
 
-bool Lexer::Process(const std::string& strText)
+void slash_character(char c, std::string& str)
+{
+    switch(c)
+    {
+        case '\\':
+            str += '\\';
+        case 'n':
+            str += '\n';
+        case 't':
+            str += '\t';
+        case 'r':
+            str += '\r';
+        case '"':
+            str += '"';
+        default:
+            break;
+    }
+}
+
+bool Lexer::process(const std::string& strText)
 {
     m_strText    = strText;
     oTokenList.clear();
@@ -64,7 +85,7 @@ bool Lexer::Process(const std::string& strText)
     bool bFound = false;
     std::vector<StringID>::iterator itTrash;
     int maxLen = 0;
-    std::pair<StringID, std::string> defineTarget;
+    StringID defineTarget;
 	// helper::replaceAll(m_strText, "\\\"", "\"", m_strText.size());
 
     while (!m_strText.empty())
@@ -80,28 +101,11 @@ bool Lexer::Process(const std::string& strText)
 				m_strText.erase(0, 1);
 				std::string newStr = "";
 				int i = 0;
-				for(i = 0; m_strText[i] != '"'; i++)
+				for (i = 0; m_strText[i] != '"'; ++i)
 				{
 					if (m_strText[i] == '\\')
 					{
-						switch(m_strText[++i])
-						{
-							case '\\':
-								newStr += '\\';
-								break;
-							case 'n':
-								newStr += '\n';
-								break;
-							case 't':
-								newStr += '\t';
-								break;
-							case 'r':
-								newStr += '\r';
-								break;
-							case '"':
-								newStr += '"';
-								break;
-						}
+                        slash_character(m_strText[++i], newStr);
 					} else
 						newStr += m_strText[i];
 				}
@@ -115,8 +119,7 @@ bool Lexer::Process(const std::string& strText)
         for (auto& define : m_oAllDefines)
         {
             std::smatch match;
-            std::regex reg(define.second);
-            if (std::regex_search(m_strText, match, reg))
+            if (std::regex_search(m_strText, match, define.second))
             {
                 int index = match.position();
                 iLen = match.length();
@@ -124,7 +127,7 @@ bool Lexer::Process(const std::string& strText)
                 {
                     if (maxLen < iLen)
                     {
-                        defineTarget = define;
+                        defineTarget = define.first;
                         maxLen = iLen;
                         pText = m_strText.substr(index, maxLen);
                     }
@@ -134,44 +137,26 @@ bool Lexer::Process(const std::string& strText)
 
         if (maxLen > 0)
         {
-            itTrash = std::find(m_oTrashDefines.begin(), m_oTrashDefines.end(), defineTarget.first);
+            itTrash = std::find(m_oTrashDefines.begin(), m_oTrashDefines.end(), defineTarget);
 			std::string newStr = "";
 			int i = 0;
             if (itTrash == m_oTrashDefines.end())
 			{
-				for(i = 0; i < maxLen; i++)
+				for (i = 0; i < maxLen; ++i)
 				{
 					if (m_strText[i] == '\\')
-					{
-						switch(m_strText[++i])
-						{
-							case '\\':
-								newStr += '\\';
-								break;
-							case 'n':
-								newStr += '\n';
-								break;
-							case 't':
-								newStr += '\t';
-								break;
-							case 'r':
-								newStr += '\r';
-								break;
-							case '"':
-								newStr += '"';
-								break;
-						}
-					} else
+                        slash_character(m_strText[++i], newStr);
+					else
 						newStr += m_strText[i];
 				}
-                oTokenList.emplace_back(defineTarget.first, newStr, i, m_iLines);
+                oTokenList.emplace_back(defineTarget, newStr, i, m_iLines);
                 m_strList.emplace_back(newStr);
 			}
             m_strText.erase(0, maxLen);
             bFound = true;
 
-            if (defineTarget.first == 83)
-                m_iLines++;
+            if (defineTarget == 83) // Id number for the '\n' character
+                ++m_iLines;
         }
 
         if (!bFound) {
@@ -188,28 +173,30 @@ bool Lexer::Process(const std::string& strText)
     return !oTokenList.empty();
 }
 
-void Lexer::Begin()
+bool Lexer::process_async(const std::string& strText)
+{
+    std::future<bool> return_val;
+    return_val = std::async(std::launch::async, &Lexer::process, this, strText);
+    return return_val.get();
+}
+
+void Lexer::begin()
 {
     oTokenIterator = oTokenList.begin();
     oStoreTokenIterator = oTokenList.begin();
 }
 
-bool Lexer::IsEnd(const char* strItr)
-{
-    return (strItr == strEnd);
-}
-
-void Lexer::Store()
+void Lexer::store()
 {
     oStoreTokenIterator = oTokenIterator;
 }
 
-void Lexer::Restore()
+void Lexer::restore()
 {
     oTokenIterator = oStoreTokenIterator;
 }
 
-Token& Lexer::PeekNextToken()
+Token& Lexer::peek_next_token()
 {
     if (oTokenList.end() != oTokenIterator)
     {
@@ -219,17 +206,17 @@ Token& Lexer::PeekNextToken()
         return oEofToken;
 }
 
-bool Lexer::Empty() const
+bool Lexer::empty() const
 {
     return oTokenList.empty();
 }
 
-std::size_t Lexer::Size() const
+std::size_t Lexer::size() const
 {
     return oTokenList.size();
 }
 
-void Lexer::Clear()
+void Lexer::clear()
 {
     m_strCurrent = 0;
     strEnd = 0;
@@ -238,34 +225,34 @@ void Lexer::Clear()
     oStoreTokenIterator = oTokenList.end();
 }
 
-bool Lexer::Finished() const
+bool Lexer::is_end() const
 {
     return (oTokenList.end() == oTokenIterator);
 }
 
-void Lexer::Define(const std::string& strId, const std::string& strRegex, bool bAddInTrash)
+void Lexer::define(const std::string& strId, const std::string& strRegex, bool bAddInTrash)
 {
-    m_oAllDefines.push_back(std::make_pair(StringID(strId), strRegex));
+    m_oAllDefines.push_back(std::make_pair(StringID(strId), std::regex(strRegex)));
 
     if (bAddInTrash)
         m_oTrashDefines.push_back(StringID(strId));
 }
 
-void Lexer::Define(const int id, const std::string& strRegex, bool bAddInTrash)
+void Lexer::define(const int id, const std::string& strRegex, bool bAddInTrash)
 {
-    m_oAllDefines.push_back(std::make_pair(StringID(id), strRegex));
+    m_oAllDefines.push_back(std::make_pair(StringID(id), std::regex(strRegex)));
 
     if (bAddInTrash)
         m_oTrashDefines.push_back(StringID(id));
 }
 
-void Lexer::DefineArea(const std::string& strId, char cStart, char cEnd)
+void Lexer::define_area(const std::string& strId, char cStart, char cEnd)
 {
    m_oAreaDefines.push_back(std::make_pair(StringID(strId), Area(cStart, cEnd)));
 }
 
 
-void Lexer::DefineArea(const int id, char cStart, char cEnd)
+void Lexer::define_area(const int id, char cStart, char cEnd)
 {
    m_oAreaDefines.push_back(std::make_pair(StringID(id), Area(cStart, cEnd)));
 }

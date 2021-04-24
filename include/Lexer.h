@@ -1,11 +1,14 @@
 
-#pragma once
+
+#ifndef FOX_LEXER_H_
+#define FOX_LEXER_H_
 
 #include <vector>
 #include <map>
 #include <iostream>
 #include <string>
 #include <iterator>
+#include <regex>
 #include "Token.h"
 
 
@@ -53,7 +56,7 @@ public:
     std::vector<Token>::iterator oStoreTokenIterator;
     Token oEofToken;
     const char* strEnd;
-    std::vector<std::pair<StringID, std::string>> m_oAllDefines;
+    std::vector<std::pair<StringID, std::regex>> m_oAllDefines;
     std::vector<std::pair<StringID, Area>> m_oAreaDefines;
     std::vector<StringID> m_oTrashDefines;
 
@@ -68,19 +71,19 @@ public:
 public:
     Lexer();
     ~Lexer();
-    void Begin();
-    bool IsEnd(const char* strItr);
-    Token NextToken();
-    bool Process(const std::string& strText);
+    void begin();
+    Token next_token();
     static bool TokenMatch(Token oToken, const char* string);
     static bool TokenMatch(Token oToken, const std::string& strString);
-    void Store();
-    void Restore();
-    Token& PeekNextToken();
-    bool Empty() const;
-    std::size_t Size() const;
-    void Clear();
-    bool Finished() const;
+    void store();
+    void restore();
+    Token& peek_next_token();
+    bool empty() const;
+    std::size_t size() const;
+    void clear();
+    bool is_end() const;
+    bool process(const std::string& strText);
+    bool process_async(const std::string& strText);
 
     inline Token& operator[](const std::size_t& lIndex)
     {
@@ -98,10 +101,10 @@ public:
             return oEofToken;
     }
 
-    void Define(const std::string& strId, const std::string& strValue, bool bAddInTrash = false);
-	void Define(const int id, const std::string& strRegex, bool bAddInTrash = false);
-    void DefineArea(const std::string& strId, char cStart, char cEnd);
-    void DefineArea(const int id, char cStart, char cEnd);
+    void define(const std::string& strId, const std::string& strValue, bool bAddInTrash = false);
+	void define(const int id, const std::string& strRegex, bool bAddInTrash = false);
+    void define_area(const std::string& strId, char cStart, char cEnd);
+    void define_area(const int id, char cStart, char cEnd);
 
 private:
     int SkipComment(bool long_comment);
@@ -113,7 +116,7 @@ public:
     virtual void Init()                     {              }
     virtual void Reset()                    {              }
     virtual bool Result()                   { return true; }
-    virtual std::size_t Process(Lexer&) { return 0;    }
+    virtual std::size_t process(Lexer&) { return 0;    }
     virtual ~HelperInterface()             = default;
 };
 
@@ -142,7 +145,7 @@ namespace helper
 
     inline void Dump(Lexer& oLexer)
     {
-        for (std::size_t i = 0; i < oLexer.Size(); ++i)
+        for (std::size_t i = 0; i < oLexer.size(); ++i)
         {
             Token oToken = oLexer[i];
             std::cout << "Token[" << i << "] " << oToken.m_oType << " --> '" << oToken.GetText() << "'" << std::endl;
@@ -154,3 +157,5 @@ namespace helper
         return oToken.m_oType == eType && Lexer::TokenMatch(oToken, strValue);
     }
 }
+
+#endif

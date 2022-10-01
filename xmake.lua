@@ -1,4 +1,4 @@
-set_project("fox_lexer")
+-- set_project("fox_lexer")
 
 add_rules("mode.debug", "mode.release")
 

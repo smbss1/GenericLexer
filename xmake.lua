@@ -1,3 +1,5 @@
+set_project("fox_lexer")
+
 add_rules("mode.debug", "mode.release")
 
 target("fox_lexer")

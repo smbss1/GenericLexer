@@ -1,13 +1,20 @@
 set_project("fox_lexer")
 
 add_rules("mode.debug", "mode.release")
+-- add_syslinks("pthread")
 
 target("fox_lexer")
-    set_languages("c++14")
+    set_languages("cxx14")
     set_kind("static")
+    add_includedirs("include", { public = true })
     add_files("src/*.cpp")
-    add_includedirs("include")
-    add_ldflags("-L/usr/local/lib", "-lpthread", {force = true})
+
+-- target("demo")
+--     set_kind("binary")
+--     set_languages("cxx14")
+--     add_deps("fox_lexer")
+--     add_files("main.cpp")
+
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --
